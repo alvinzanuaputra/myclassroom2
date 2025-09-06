@@ -111,6 +111,16 @@ npx prisma migrate reset --force
 npm run db:seed
 ```
 
+`Backup Database`
+```bash
+# .venv
+.\.venv\Scripts\activate
+pip install sqlalchemy psycopg2-binary pandas openpyxl
+pip install python-dotenv
+# deactivate
+python backup_fromNeon.py
+```
+
 5. **Jalankan Aplikasi**
 ```bash
 # Backend (Port 3000)
