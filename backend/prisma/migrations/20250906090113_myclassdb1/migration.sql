@@ -13,8 +13,24 @@ CREATE TABLE "StudentAssessment" (
     "studentName" TEXT NOT NULL,
     "className" TEXT NOT NULL,
     "teacherId" INTEGER NOT NULL,
+    "weekNumber" INTEGER NOT NULL DEFAULT 1,
+    "meeting1_kehadiran" INTEGER NOT NULL DEFAULT 1,
+    "meeting1_membaca" INTEGER NOT NULL DEFAULT 1,
+    "meeting1_kosakata" INTEGER NOT NULL DEFAULT 1,
+    "meeting1_pengucapan" INTEGER NOT NULL DEFAULT 1,
+    "meeting1_speaking" INTEGER NOT NULL DEFAULT 1,
     "meeting1_total" INTEGER NOT NULL,
+    "meeting2_kehadiran" INTEGER NOT NULL DEFAULT 1,
+    "meeting2_membaca" INTEGER NOT NULL DEFAULT 1,
+    "meeting2_kosakata" INTEGER NOT NULL DEFAULT 1,
+    "meeting2_pengucapan" INTEGER NOT NULL DEFAULT 1,
+    "meeting2_speaking" INTEGER NOT NULL DEFAULT 1,
     "meeting2_total" INTEGER NOT NULL,
+    "meeting3_kehadiran" INTEGER NOT NULL DEFAULT 1,
+    "meeting3_membaca" INTEGER NOT NULL DEFAULT 1,
+    "meeting3_kosakata" INTEGER NOT NULL DEFAULT 1,
+    "meeting3_pengucapan" INTEGER NOT NULL DEFAULT 1,
+    "meeting3_speaking" INTEGER NOT NULL DEFAULT 1,
     "meeting3_total" INTEGER NOT NULL,
     "total_weekly" INTEGER NOT NULL,
     "average" DOUBLE PRECISION NOT NULL,
@@ -28,6 +44,9 @@ CREATE TABLE "StudentAssessment" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Teacher_name_key" ON "Teacher"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "StudentAssessment_studentName_className_teacherId_weekNumbe_key" ON "StudentAssessment"("studentName", "className", "teacherId", "weekNumber");
 
 -- AddForeignKey
 ALTER TABLE "StudentAssessment" ADD CONSTRAINT "StudentAssessment_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "Teacher"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
