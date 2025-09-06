@@ -1,7 +1,10 @@
 // Database Admin Page JavaScript
-const API_BASE_URL = window.location.hostname === 'localhost' 
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000/api' 
-    : '/api';
+    : window.location.origin + '/api';
+
+// Add debug log
+console.log('API Base URL:', API_BASE_URL);
 
 // DOM Elements
 const loadingSpinner = document.getElementById('loadingSpinner');
@@ -88,7 +91,7 @@ async function loadAssessments() {
 
 // Display teachers in table
 function displayTeachers(teachers) {
-    if (teachers.length === 0) {
+    if (!teachers || teachers.length === 0) {
         teachersTableBody.innerHTML = `
             <tr>
                 <td colspan="4" class="px-6 py-4 text-center text-gray-500">
@@ -100,13 +103,93 @@ function displayTeachers(teachers) {
     }
 
     teachersTableBody.innerHTML = teachers.map(teacher => `
-        <tr class="hover:bg-gray-50">
+        <tr class="hover:bg-gray-50" data-teacher-id="${teacher.id}">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${teacher.id}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${teacher.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center space-x-2">
+                    <input type="text" 
+                           value="${teacher.name}" 
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 teacher-name-input"
+                           data-original-name="${teacher.name}">
+                    <button class="save-teacher-btn p-1.5 text-gray-400 hover:text-blue-600 hover:border-blue-600 focus:outline-none border border-gray-300 rounded-md" 
+                            title="Simpan perubahan">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </button>
+                </div>
+            </td>
             <td class="px-6 py-4 text-sm text-gray-600">${teacher.notes || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${teacher.assessmentCount || 0}</td>
         </tr>
     `).join('');
+
+    // Add event listeners for save buttons
+    document.querySelectorAll('.save-teacher-btn').forEach(btn => {
+        btn.addEventListener('click', handleSaveTeacher);
+    });
+
+    // Add input event to show/hide save button
+    document.querySelectorAll('.teacher-name-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const saveBtn = this.nextElementSibling;
+            const originalName = this.dataset.originalName;
+            saveBtn.classList.toggle('text-blue-600', this.value !== originalName);
+            saveBtn.disabled = this.value === originalName;
+        });
+    });
+}
+
+// Handle save teacher name
+async function handleSaveTeacher(e) {
+    const btn = e.currentTarget;
+    const input = btn.previousElementSibling;
+    const teacherId = btn.closest('tr').dataset.teacherId;
+    const newName = input.value.trim();
+
+    if (!newName) {
+        showError('Nama guru tidak boleh kosong');
+        return;
+    }
+
+    try {
+        showLoading(true);
+        const response = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: newName })
+        });
+
+        if (!response.ok) {
+            throw new Error('Gagal memperbarui nama guru');
+        }
+
+        // Update the original name in the data attribute
+        input.dataset.originalName = newName;
+        btn.classList.remove('text-blue-600');
+        btn.disabled = true;
+        
+        showToast('Nama guru berhasil diperbarui');
+    } catch (error) {
+        console.error('Error updating teacher:', error);
+        showError('Gagal memperbarui nama guru');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Show toast notification
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 px-4 py-2 bg-green-500 text-white rounded-md shadow-lg';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
 // Display assessments in table

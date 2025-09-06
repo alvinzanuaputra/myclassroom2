@@ -71,4 +71,44 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// PUT /api/teachers/:id - Mengupdate data guru
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Nama guru tidak valid'
+      });
+    }
+
+    const updatedTeacher = await prisma.teacher.update({
+      where: { id: parseInt(id) },
+      data: {
+        name: name.trim()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: updatedTeacher,
+      message: 'Data guru berhasil diperbarui'
+    });
+  } catch (error) {
+    console.error('Error updating teacher:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'Guru tidak ditemukan'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Gagal memperbarui data guru'
+    });
+  }
+});
+
 module.exports = router;
