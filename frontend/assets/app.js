@@ -195,40 +195,40 @@ function displayAssessments(data) {
         return;
     }
 
-    // Sort data by weekNumber first, then by className
+    // Sort data by className first, then by weekNumber
     const sortedData = data.sort((a, b) => {
-        if (a.weekNumber !== b.weekNumber) {
-            return a.weekNumber - b.weekNumber;
+        if (a.className !== b.className) {
+            return a.className.localeCompare(b.className);
         }
-        return a.className.localeCompare(b.className);
+        return a.weekNumber - b.weekNumber;
     });
 
-    // Group assessments by week only for better organization
-    const groupedByWeek = sortedData.reduce((acc, assessment) => {
-        const weekKey = assessment.weekNumber || 1;
-        if (!acc[weekKey]) {
-            acc[weekKey] = {
-                weekNumber: weekKey,
+    // Group assessments by class for better organization
+    const groupedByClass = sortedData.reduce((acc, assessment) => {
+        const classKey = assessment.className;
+        if (!acc[classKey]) {
+            acc[classKey] = {
+                className: classKey,
                 assessments: []
             };
         }
-        acc[weekKey].assessments.push(assessment);
+        acc[classKey].assessments.push(assessment);
         return acc;
     }, {});
 
     let tableHTML = '';
     
-    // Sort weeks numerically
-    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => parseInt(a) - parseInt(b));
+    // Sort classes alphabetically
+    const sortedClasses = Object.keys(groupedByClass).sort();
     
-    sortedWeeks.forEach(weekKey => {
-        const group = groupedByWeek[weekKey];
+    sortedClasses.forEach(classKey => {
+        const group = groupedByClass[classKey];
         
-        // Add week header
+        // Add class header
         tableHTML += `
             <tr class="bg-blue-50">
                 <td colspan="11" class="px-6 py-3 text-left font-semibold text-blue-800">
-                    Minggu ${group.weekNumber}
+                    Kelas ${group.className}
                 </td>
             </tr>
         `;
@@ -259,12 +259,11 @@ function displayAssessments(data) {
                     break;
             }
             
-            // <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">Minggu ${assessment.weekNumber || 1}</td>
             tableHTML += `
                 <tr class="hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
                     <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.studentName}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.className}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">Minggu ${assessment.weekNumber || 1}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.teacherName}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting1Scores}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting2Scores}</td>
