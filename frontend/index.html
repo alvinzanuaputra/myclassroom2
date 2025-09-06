@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyClassroom - Rubrik Penilaian Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-primary text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold text-center">MyClassroom</h1>
+            <p class="text-center text-blue-100 mt-2">Rubrik Penilaian untuk Guru - R&S Corner</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Form Input Penilaian -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Form Input Penilaian Siswa</h2>
+            <form id="assessmentForm" class="space-y-6">
+                <!-- Basic Info -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Siswa</label>
+                        <input type="text" id="studentName" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                        <select id="className" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Pilih Kelas</option>
+                            <option value="3A">3A</option>
+                            <option value="3B">3B</option>
+                            <option value="4A">4A</option>
+                            <option value="4B">4B</option>
+                            <option value="5A">5A</option>
+                            <option value="5B">5B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Guru</label>
+                        <select id="teacherId" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Pilih Guru</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Scoring Tables -->
+                <div class="space-y-6">
+                    <h3 class="text-lg font-semibold text-gray-800">Skor HRVPS per Pertemuan</h3>
+                    
+                    <!-- Meeting 1 -->
+                    <div class="border rounded-lg p-4">
+                        <h4 class="font-medium text-gray-700 mb-3">Pertemuan 1</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting1_kehadiran" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting1_membaca" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting1_kosakata" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting1_pengucapan" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting1_speaking" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meeting 2 -->
+                    <div class="border rounded-lg p-4">
+                        <h4 class="font-medium text-gray-700 mb-3">Pertemuan 2</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting2_kehadiran" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting2_membaca" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting2_kosakata" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting2_pengucapan" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting2_speaking" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meeting 3 -->
+                    <div class="border rounded-lg p-4">
+                        <h4 class="font-medium text-gray-700 mb-3">Pertemuan 3</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting3_kehadiran" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting3_membaca" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting3_kosakata" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting3_pengucapan" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                <input type="number" min="0" max="5" id="meeting3_speaking" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Perkembangan Umum</label>
+                    <textarea id="progressNotes" rows="4" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder="Masukkan catatan perkembangan siswa..."></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex gap-4">
+                    <button type="submit" id="submitBtn"
+                            class="bg-primary text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                        Simpan Penilaian
+                    </button>
+                    <button type="button" id="cancelBtn" 
+                            class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Search and Table Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 md:mb-0">Rekap Penilaian</h2>
+                <div class="flex gap-4">
+                    <input type="text" id="searchInput" placeholder="Cari nama siswa..." 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <button id="searchBtn" 
+                            class="bg-secondary text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                        Cari
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guru</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pertemuan 1</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pertemuan 2</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pertemuan 3</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Mingguan</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rata-rata</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assessmentTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6">
+                <div class="text-sm text-gray-700">
+                    Menampilkan <span id="showingFrom">0</span> sampai <span id="showingTo">0</span> dari <span id="totalItems">0</span> data
+                </div>
+                <div class="flex gap-2">
+                    <button id="prevBtn" 
+                            class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                        Sebelumnya
+                    </button>
+                    <span id="pageInfo" class="px-3 py-2 text-sm text-gray-700"></span>
+                    <button id="nextBtn" 
+                            class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                        Selanjutnya
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Edit Penilaian Siswa</h3>
+                    <form id="editForm">
+                        <!-- Form content will be populated here -->
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 hidden">
+        <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script src="assets/app.js"></script>
+</body>
+</html>

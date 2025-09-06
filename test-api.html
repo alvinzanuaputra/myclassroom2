@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>MyClassroom API Test</h1>
+    <button onclick="testHealth()">Test Health</button>
+    <button onclick="testTeachers()">Test Teachers</button>
+    <button onclick="testClasses()">Test Classes</button>
+    <button onclick="testAssessments()">Test Assessments</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        
+        async function testEndpoint(endpoint, name) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`);
+                const data = await response.json();
+                document.getElementById('results').innerHTML += `
+                    <h3>${name}</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML += `
+                    <h3>${name} - ERROR</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+        
+        function testHealth() {
+            testEndpoint('/health', 'Health Check');
+        }
+        
+        function testTeachers() {
+            testEndpoint('/teachers', 'Teachers');
+        }
+        
+        function testClasses() {
+            testEndpoint('/classes', 'Classes');
+        }
+        
+        function testAssessments() {
+            testEndpoint('/assessments', 'Assessments');
+        }
+    </script>
+</body>
+</html>

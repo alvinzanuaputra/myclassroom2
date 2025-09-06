@@ -1,0 +1,27 @@
+{
+  "name": "myclassroom",
+  "version": "1.0.0",
+  "description": "MyClassroom - Rubrik Penilaian Guru (R&S Corner)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm start",
+    "frontend:dev": "cd frontend && live-server --port=5500 --open=index.html",
+    "install:all": "npm install && cd backend && npm install",
+    "db:setup": "cd backend && npm run db:generate && npm run db:migrate && npm run db:seed",
+    "db:reset": "cd backend && npx prisma migrate reset && npm run db:seed",
+    "build": "echo 'Frontend tidak memerlukan build process'",
+    "start": "npm run backend:start"
+  },
+  "keywords": ["classroom", "assessment", "education", "rubrik", "penilaian"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "live-server": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
