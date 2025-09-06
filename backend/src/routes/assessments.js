@@ -17,7 +17,7 @@ function validateScores(scores) {
   const aspects = ['kehadiran', 'membaca', 'kosakata', 'pengucapan', 'speaking'];
   for (const aspect of aspects) {
     const score = scores[aspect];
-    if (typeof score !== 'number' || score < 0 || score > 5 || !Number.isInteger(score)) {
+    if (typeof score !== 'number' || score < 1 || score > 5 || !Number.isInteger(score)) {
       return false;
     }
   }
@@ -154,6 +154,8 @@ router.post('/', async (req, res) => {
 
     // Validasi dan hitung skor per pertemuan
     const meetingTotals = [];
+    const meetingScores = {};
+    
     for (let i = 0; i < 3; i++) {
       const meeting = pertemuan[i];
       if (meeting.meeting !== i + 1) {
@@ -166,11 +168,20 @@ router.post('/', async (req, res) => {
       if (!validateScores(meeting.scores)) {
         return res.status(400).json({
           success: false,
-          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
+          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 1-5.`
         });
       }
 
-      meetingTotals.push(calculateMeetingTotal(meeting.scores));
+      const total = calculateMeetingTotal(meeting.scores);
+      meetingTotals.push(total);
+      
+      // Store individual scores
+      meetingScores[`meeting${i + 1}_kehadiran`] = meeting.scores.kehadiran;
+      meetingScores[`meeting${i + 1}_membaca`] = meeting.scores.membaca;
+      meetingScores[`meeting${i + 1}_kosakata`] = meeting.scores.kosakata;
+      meetingScores[`meeting${i + 1}_pengucapan`] = meeting.scores.pengucapan;
+      meetingScores[`meeting${i + 1}_speaking`] = meeting.scores.speaking;
+      meetingScores[`meeting${i + 1}_total`] = total;
     }
 
     // Hitung total mingguan dan rata-rata
@@ -184,9 +195,7 @@ router.post('/', async (req, res) => {
         studentName,
         className,
         teacherId: parseInt(teacherId),
-        meeting1_total: meetingTotals[0],
-        meeting2_total: meetingTotals[1],
-        meeting3_total: meetingTotals[2],
+        ...meetingScores,
         total_weekly: totalWeekly,
         average,
         category,
@@ -267,6 +276,8 @@ router.put('/:id', async (req, res) => {
 
     // Validasi dan hitung skor per pertemuan
     const meetingTotals = [];
+    const meetingScores = {};
+    
     for (let i = 0; i < 3; i++) {
       const meeting = pertemuan[i];
       if (meeting.meeting !== i + 1) {
@@ -279,11 +290,20 @@ router.put('/:id', async (req, res) => {
       if (!validateScores(meeting.scores)) {
         return res.status(400).json({
           success: false,
-          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
+          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 1-5.`
         });
       }
 
-      meetingTotals.push(calculateMeetingTotal(meeting.scores));
+      const total = calculateMeetingTotal(meeting.scores);
+      meetingTotals.push(total);
+      
+      // Store individual scores
+      meetingScores[`meeting${i + 1}_kehadiran`] = meeting.scores.kehadiran;
+      meetingScores[`meeting${i + 1}_membaca`] = meeting.scores.membaca;
+      meetingScores[`meeting${i + 1}_kosakata`] = meeting.scores.kosakata;
+      meetingScores[`meeting${i + 1}_pengucapan`] = meeting.scores.pengucapan;
+      meetingScores[`meeting${i + 1}_speaking`] = meeting.scores.speaking;
+      meetingScores[`meeting${i + 1}_total`] = total;
     }
 
     // Hitung total mingguan dan rata-rata
@@ -298,9 +318,7 @@ router.put('/:id', async (req, res) => {
         studentName,
         className,
         teacherId: parseInt(teacherId),
-        meeting1_total: meetingTotals[0],
-        meeting2_total: meetingTotals[1],
-        meeting3_total: meetingTotals[2],
+        ...meetingScores,
         total_weekly: totalWeekly,
         average,
         category,

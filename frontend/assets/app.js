@@ -8,6 +8,7 @@ let currentPage = 1;
 let currentSearch = '';
 let editingId = null;
 let teachers = [];
+let assessments = [];
 
 // DOM Elements
 const assessmentForm = document.getElementById('assessmentForm');
@@ -15,6 +16,11 @@ const editModal = document.getElementById('editModal');
 const loadingSpinner = document.getElementById('loadingSpinner');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toastMessage');
+const assessmentTable = document.getElementById('assessmentTable');
+const searchInput = document.getElementById('searchInput');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const pageInfo = document.getElementById('pageInfo');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -30,6 +36,7 @@ function setupEventListeners() {
     
     // Search functionality
     document.getElementById('searchBtn').addEventListener('click', handleSearch);
+    searchInput.addEventListener('input', handleSearch);
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             handleSearch();
@@ -37,17 +44,8 @@ function setupEventListeners() {
     });
     
     // Pagination
-    document.getElementById('prevBtn').addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            loadAssessments();
-        }
-    });
-    
-    document.getElementById('nextBtn').addEventListener('click', () => {
-        currentPage++;
-        loadAssessments();
-    });
+    prevBtn.addEventListener('click', () => changePage(currentPage - 1));
+    nextBtn.addEventListener('click', () => changePage(currentPage + 1));
     
     // Cancel button
     document.getElementById('cancelBtn').addEventListener('click', resetForm);
@@ -108,29 +106,32 @@ async function loadTeachers() {
 }
 
 // Load assessments data
-async function loadAssessments() {
+async function loadAssessments(page = 1, search = '') {
     try {
         const params = new URLSearchParams({
-            page: currentPage,
+            page: page,
             limit: 10,
-            q: currentSearch
+            q: search
         });
         
         const response = await apiCall(`/assessments?${params}`);
-        const { data: assessments, pagination } = response;
+        const { data: assessmentsData, pagination } = response;
         
-        renderAssessmentsTable(assessments);
+        assessments = assessmentsData;
+        displayAssessments(assessmentsData);
         updatePagination(pagination);
+        currentPage = page;
+        currentSearch = search;
     } catch (error) {
         console.error('Error loading assessments:', error);
     }
 }
 
-// Render assessments table
-function renderAssessmentsTable(assessments) {
-    const tbody = document.getElementById('assessmentTableBody');
+// Display assessments in table with detailed score format
+function displayAssessments(data) {
+    const tbody = assessmentTable.querySelector('tbody');
     
-    if (assessments.length === 0) {
+    if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="11" class="px-4 py-8 text-center text-gray-500">
@@ -140,40 +141,88 @@ function renderAssessmentsTable(assessments) {
         `;
         return;
     }
+
+    // Group assessments by class for header display
+    const groupedByClass = data.reduce((acc, assessment) => {
+        if (!acc[assessment.className]) {
+            acc[assessment.className] = [];
+        }
+        acc[assessment.className].push(assessment);
+        return acc;
+    }, {});
+
+    let tableHTML = '';
     
-    tbody.innerHTML = assessments.map((assessment, index) => {
-        const rowNumber = (currentPage - 1) * 10 + index + 1;
-        const categoryBadge = getCategoryBadge(assessment.category);
+    Object.keys(groupedByClass).forEach(className => {
+        const classAssessments = groupedByClass[className];
         
-        return `
-            <tr class="hover:bg-gray-50">
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${rowNumber}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.studentName}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.className}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.teacher.name}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.meeting1_total}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.meeting2_total}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.meeting3_total}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.total_weekly}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.average}</td>
-                <td class="px-4 py-4 whitespace-nowrap">${categoryBadge}</td>
-                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="editAssessment(${assessment.id})" 
-                            class="text-indigo-600 hover:text-indigo-900 mr-3">
-                        Edit
-                    </button>
-                    <button onclick="deleteAssessment(${assessment.id})" 
-                            class="text-red-600 hover:text-red-900">
-                        Hapus
-                    </button>
+        // Add class header
+        tableHTML += `
+            <tr class="bg-blue-50">
+                <td colspan="11" class="px-6 py-3 text-left font-semibold text-blue-800">
+                    Kelas: ${className} | Minggu ke: 1
                 </td>
             </tr>
         `;
-    }).join('');
+        
+        classAssessments.forEach((assessment, index) => {
+            // Format detailed scores for each meeting
+            const meeting1Scores = `${assessment.meeting1_kehadiran}-${assessment.meeting1_membaca}-${assessment.meeting1_kosakata}-${assessment.meeting1_pengucapan}-${assessment.meeting1_speaking} (${assessment.meeting1_total})`;
+            const meeting2Scores = `${assessment.meeting2_kehadiran}-${assessment.meeting2_membaca}-${assessment.meeting2_kosakata}-${assessment.meeting2_pengucapan}-${assessment.meeting2_speaking} (${assessment.meeting2_total})`;
+            const meeting3Scores = `${assessment.meeting3_kehadiran}-${assessment.meeting3_membaca}-${assessment.meeting3_kosakata}-${assessment.meeting3_pengucapan}-${assessment.meeting3_speaking} (${assessment.meeting3_total})`;
+            
+            // Determine category color
+            let categoryColor = 'text-gray-600';
+            switch (assessment.category) {
+                case 'Sangat Baik':
+                    categoryColor = 'text-green-600 font-semibold';
+                    break;
+                case 'Baik':
+                    categoryColor = 'text-blue-600 font-semibold';
+                    break;
+                case 'Cukup':
+                    categoryColor = 'text-yellow-600 font-semibold';
+                    break;
+                case 'Kurang':
+                    categoryColor = 'text-orange-600 font-semibold';
+                    break;
+                case 'Sangat Kurang':
+                    categoryColor = 'text-red-600 font-semibold';
+                    break;
+            }
+            
+            tableHTML += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${index + 1}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.studentName}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.className}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.teacher.name}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting1Scores}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting2Scores}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting3Scores}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.total_weekly}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.average}</td>
+                    <td class="px-4 py-4 whitespace-nowrap">${categoryBadge(assessment.category)}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editAssessment(${assessment.id})" 
+                                class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            Edit
+                        </button>
+                        <button onclick="deleteAssessment(${assessment.id})" 
+                                class="text-red-600 hover:text-red-900">
+                            Hapus
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+    
+    tbody.innerHTML = tableHTML;
 }
 
 // Get category badge HTML
-function getCategoryBadge(category) {
+function categoryBadge(category) {
     const badges = {
         'Sangat Baik': 'bg-green-100 text-green-800',
         'Baik': 'bg-blue-100 text-blue-800',
@@ -265,9 +314,14 @@ function getFormData() {
 
 // Search handler
 function handleSearch() {
-    currentSearch = document.getElementById('searchInput').value;
-    currentPage = 1;
-    loadAssessments();
+    const searchTerm = searchInput.value.trim();
+    loadAssessments(1, searchTerm);
+}
+
+// Change page
+function changePage(page) {
+    if (page < 1) return;
+    loadAssessments(page, currentSearch);
 }
 
 // Edit assessment

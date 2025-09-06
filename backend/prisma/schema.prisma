@@ -22,9 +22,31 @@ model StudentAssessment {
   studentName       String
   className         String
   teacherId         Int
-  meeting1_total    Int
-  meeting2_total    Int
-  meeting3_total    Int
+  
+  // Meeting 1 scores
+  meeting1_kehadiran    Int @default(1)
+  meeting1_membaca      Int @default(1)
+  meeting1_kosakata     Int @default(1)
+  meeting1_pengucapan   Int @default(1)
+  meeting1_speaking     Int @default(1)
+  meeting1_total        Int
+  
+  // Meeting 2 scores
+  meeting2_kehadiran    Int @default(1)
+  meeting2_membaca      Int @default(1)
+  meeting2_kosakata     Int @default(1)
+  meeting2_pengucapan   Int @default(1)
+  meeting2_speaking     Int @default(1)
+  meeting2_total        Int
+  
+  // Meeting 3 scores
+  meeting3_kehadiran    Int @default(1)
+  meeting3_membaca      Int @default(1)
+  meeting3_kosakata     Int @default(1)
+  meeting3_pengucapan   Int @default(1)
+  meeting3_speaking     Int @default(1)
+  meeting3_total        Int
+  
   total_weekly      Int
   average           Float
   category          String
