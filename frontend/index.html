@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyClassroom - Rubrik Penilaian Guru</title>
+    <title>MyClassroom - Sistem Penilaian HRVPS</title>
+    <link rel="icon" type="image/png" href="assets/icon/unesa.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -18,239 +20,819 @@
         }
     </script>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <!-- Header -->
     <header class="bg-primary text-white shadow-lg">
-        <div class="container mx-auto px-4 py-6">
-            <h1 class="text-3xl font-bold text-center">MyClassroom</h1>
-            <p class="text-center text-blue-100 mt-2">Rubrik Penilaian untuk Guru - R&S Corner</p>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="lg:text-3xl text-xl font-bold text-white">MyClassroom</h1>
+                        <p class="text-xs text-blue-100">Sistem Penilaian HRVPS</p>
+                    </div>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="index.html"
+                        class="bg-white text-primary px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">
+                        Dashboard
+                    </a>
+                    <a href="database.html"
+                        class="border border-white text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-white hover:text-primary transition-colors">
+                        Database Admin
+                    </a>
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Form Input Penilaian -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Form Input Penilaian Siswa</h2>
-            <form id="assessmentForm" class="space-y-6">
-                <!-- Basic Info -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Siswa</label>
-                        <input type="text" id="studentName" required 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
-                        <select id="className" required 
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="px-4 py-6 sm:px-0">
+            <div class="border-4 border-dashed border-gray-200 rounded-lg p-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Dashboard Penilaian HRVPS</h1>
+                <p class="text-gray-600">Sistem penilaian untuk aspek Kehadiran, Membaca, Kosakata, Pengucapan, dan
+                    Speaking</p>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden flex justify-center items-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+
+        <!-- Messages -->
+        <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <span id="errorText"></span>
+        </div>
+        <div id="successMessage"
+            class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            <span id="successText"></span>
+        </div>
+
+        <!-- Form Section -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Input Penilaian Siswa</h2>
+                <p class="text-sm text-gray-600">Masukkan data penilaian HRVPS untuk 3 pertemuan</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Form Input Penilaian Siswa</h2>
+                <form id="assessmentForm" class="space-y-6">
+                    <!-- Basic Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Siswa</label>
+                            <input type="text" id="studentName" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            <option value="">Pilih Kelas</option>
-                            <option value="3A">3A</option>
-                            <option value="3B">3B</option>
-                            <option value="4A">4A</option>
-                            <option value="4B">4B</option>
-                            <option value="5A">5A</option>
-                            <option value="5B">5B</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Guru</label>
-                        <select id="teacherId" required 
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                            <select id="className" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            <option value="">Pilih Guru</option>
-                        </select>
+                                <option value="">Pilih Kelas</option>
+                                <option value="3A">3A</option>
+                                <option value="3B">3B</option>
+                                <option value="4A">4A</option>
+                                <option value="4B">4B</option>
+                                <option value="5A">5A</option>
+                                <option value="5B">5B</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Minggu Ke</label>
+                            <select id="weekNumber" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="">Pilih Minggu</option>
+                                <option value="1">Minggu 1</option>
+                                <option value="2">Minggu 2</option>
+                                <option value="3">Minggu 3</option>
+                                <option value="4">Minggu 4</option>
+                                <option value="5">Minggu 5</option>
+                                <option value="6">Minggu 6</option>
+                                <option value="7">Minggu 7</option>
+                                <option value="8">Minggu 8</option>
+                                <option value="9">Minggu 9</option>
+                                <option value="10">Minggu 10</option>
+                                <option value="11">Minggu 11</option>
+                                <option value="12">Minggu 12</option>
+                                <option value="13">Minggu 13</option>
+                                <option value="14">Minggu 14</option>
+                                <option value="15">Minggu 15</option>
+                                <option value="16">Minggu 16</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Guru</label>
+                            <select id="teacherId" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="">Pilih Guru</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Scoring Tables -->
-                <div class="space-y-6">
-                    <h3 class="text-lg font-semibold text-gray-800">Skor HRVPS per Pertemuan</h3>
-                    
-                    <!-- Meeting 1 -->
-                    <div class="border rounded-lg p-4">
-                        <h4 class="font-medium text-gray-700 mb-3">Pertemuan 1</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting1_kehadiran" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <!-- Scoring Tables -->
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-800">Skor HRVPS per Pertemuan</h3>
+
+                        <!-- Meeting 1 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-700 mb-3">Pertemuan 1</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                    <select id="meeting1_kehadiran"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                    <select id="meeting1_membaca"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                    <select id="meeting1_kosakata"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                    <select id="meeting1_pengucapan"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                    <select id="meeting1_speaking"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting1_membaca" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                        </div>
+
+                        <!-- Meeting 2 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-700 mb-3">Pertemuan 2</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                    <select id="meeting2_kehadiran" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                    <select id="meeting2_membaca" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                    <select id="meeting2_kosakata" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                    <select id="meeting2_pengucapan" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                    <select id="meeting2_speaking" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting1_kosakata" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting1_pengucapan" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting1_speaking" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                        </div>
+
+                        <!-- Meeting 3 -->
+                        <div class="border rounded-lg p-4">
+                            <h4 class="font-medium text-gray-700 mb-3">Pertemuan 3</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                    <select id="meeting3_kehadiran"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                    <select id="meeting3_membaca"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                    <select id="meeting3_kosakata"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                    <select id="meeting3_pengucapan"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                    <select id="meeting3_speaking"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <!-- <option value="">Pilih Skor</option> -->
+                                        <option value="0">Belum</option>
+                                        <option value="1">1. Sangat Kurang</option>
+                                        <option value="2">2. Kurang</option>
+                                        <option value="3">3. Cukup</option>
+                                        <option value="4">4. Baik</option>
+                                        <option value="5">5. Baik Sekali</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Meeting 2 -->
-                    <div class="border rounded-lg p-4">
-                        <h4 class="font-medium text-gray-700 mb-3">Pertemuan 2</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting2_kehadiran" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting2_membaca" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting2_kosakata" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting2_pengucapan" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting2_speaking" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                        </div>
+                    <!-- Progress Notes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Perkembangan Umum</label>
+                        <textarea id="progressNotes" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder="Masukkan catatan perkembangan siswa..."></textarea>
                     </div>
 
-                    <!-- Meeting 3 -->
-                    <div class="border rounded-lg p-4">
-                        <h4 class="font-medium text-gray-700 mb-3">Pertemuan 3</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting3_kehadiran" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting3_membaca" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting3_kosakata" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting3_pengucapan" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
-                                <input type="number" min="0" max="5" id="meeting3_speaking" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Progress Notes -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Perkembangan Umum</label>
-                    <textarea id="progressNotes" rows="4" 
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="Masukkan catatan perkembangan siswa..."></textarea>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="flex gap-4">
-                    <button type="submit" id="submitBtn"
+                    <!-- Submit Button -->
+                    <div class="flex gap-4">
+                        <button type="submit" id="submitBtn"
                             class="bg-primary text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary">
-                        Simpan Penilaian
-                    </button>
-                    <button type="button" id="cancelBtn" 
+                            Simpan Penilaian Baru
+                        </button>
+                        <button type="button" id="cancelBtn"
                             class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                        Batal
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Search and Table Section -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4 md:mb-0">Rekap Penilaian</h2>
-                <div class="flex gap-4">
-                    <input type="text" id="searchInput" placeholder="Cari nama siswa..." 
-                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                    <button id="searchBtn" 
-                            class="bg-secondary text-white px-4 py-2 rounded-md hover:bg-blue-600">
-                        Cari
-                    </button>
-                </div>
+                            Batal
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            <!-- Table -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guru</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pertemuan 1<br><span class="text-xs font-normal">(H-R-V-P-S)</span></th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pertemuan 2<br><span class="text-xs font-normal">(H-R-V-P-S)</span></th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pertemuan 3<br><span class="text-xs font-normal">(H-R-V-P-S)</span></th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Mingguan</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rata-rata</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="assessmentTableBody" class="bg-white divide-y divide-gray-200">
-                        <!-- Data will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="flex items-center justify-between mt-6">
-                <div class="text-sm text-gray-700">
-                    Menampilkan <span id="showingFrom">0</span> sampai <span id="showingTo">0</span> dari <span id="totalItems">0</span> data
+            <!-- Search and Table Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 md:mb-0">Rekap Penilaian</h2>
+                    <div class="flex gap-4">
+                        <input type="text" id="searchInput" placeholder="Cari nama siswa..."
+                            class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                        <button id="searchBtn" class="bg-secondary text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                            Cari
+                        </button>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button id="prevBtn" 
+
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table id="assessmentTable" class="min-w-full bg-white">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    No</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Nama Siswa</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Kelas</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Guru</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Pertemuan 1<br><span class="text-xs font-normal">(H-R-V-P-S)</span></th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Pertemuan 2<br><span class="text-xs font-normal">(H-R-V-P-S)</span></th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Pertemuan 3<br><span class="text-xs font-normal">(H-R-V-P-S)</span></th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Total Mingguan</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Rata-rata</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Kategori</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assessmentTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex items-center justify-between mt-6">
+                    <div class="text-sm text-gray-700">
+                        Menampilkan <span id="showingFrom">0</span> sampai <span id="showingTo">0</span> dari <span
+                            id="totalItems">0</span> data
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="prevBtn"
                             class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
-                        Sebelumnya
-                    </button>
-                    <span id="pageInfo" class="px-3 py-2 text-sm text-gray-700"></span>
-                    <button id="nextBtn" 
+                            Sebelumnya
+                        </button>
+                        <span id="pageInfo" class="px-3 py-2 text-sm text-gray-700"></span>
+                        <button id="nextBtn"
                             class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
-                        Selanjutnya
-                    </button>
+                            Selanjutnya
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- About Section -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Tentang MyClassroom</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        Sistem penilaian digital untuk rubrik HRVPS (Kehadiran, Membaca, Kosakata, Pengucapan, Speaking)
+                        yang membantu guru melakukan evaluasi pembelajaran bahasa secara komprehensif dan terstruktur.
+                    </p>
+                </div>
+
+                <!-- Statistics Section -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Statistik Sistem</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-start gap-x-2">
+                            <span class="text-gray-300">Total Guru:</span>
+                            <span id="totalTeachers" class="font-medium">5</span>
+                        </div>
+                        <div class="flex justify-start gap-x-2">
+                            <span class="text-gray-300">Total Penilaian:</span>
+                            <span id="totalAssessments" class="font-medium">10</span>
+                        </div>
+                        <div class="flex justify-start gap-x-2">
+                            <span class="text-gray-300">Kelas Aktif:</span>
+                            <span class="font-medium">6 Kelas</span>
+                        </div>
+                        <div class="flex justify-start gap-x-2">
+                            <span class="text-gray-300">Aspek Penilaian:</span>
+                            <span class="font-medium">5 Aspek</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HRVPS Info Section -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Aspek Penilaian HRVPS</h3>
+                    <div class="space-y-1 text-sm text-gray-300">
+                        <div><span class="font-medium text-blue-300">H</span> - Kehadiran</div>
+                        <div><span class="font-medium text-green-300">R</span> - Membaca</div>
+                        <div><span class="font-medium text-yellow-300">V</span> - Kosakata</div>
+                        <div><span class="font-medium text-purple-300">P</span> - Pengucapan</div>
+                        <div><span class="font-medium text-pink-300">S</span> - Speaking</div>
+                    </div>
+                    <div class="mt-4 text-xs text-gray-400">
+                        Skala Penilaian: 1-5 | Total Maksimal: 75
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Section -->
+            <div class="border-t border-gray-700 mt-8 pt-6">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-sm text-gray-400">
+                        2025 MyClassroom - Sistem Penilaian HRVPS
+                    </div>
+                    <div class="text-sm text-gray-400 mt-2 md:mt-0">
+                        Kategori:
+                        <span class="text-green-400">Sangat Baik (21-25)</span> |
+                        <span class="text-blue-400">Baik (16-20)</span> |
+                        <span class="text-yellow-400">Cukup (11-15)</span> |
+                        <span class="text-orange-400">Kurang (6-10)</span> |
+                        <span class="text-red-400">Sangat Kurang (1-5)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <!-- Edit Modal -->
-    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
                 <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Edit Penilaian Siswa</h3>
-                    <form id="editForm">
-                        <!-- Form content will be populated here -->
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Edit Penilaian Siswa</h3>
+                        <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form id="editForm" class="space-y-6">
+                        <!-- Basic Info -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nama Siswa</label>
+                                <input type="text" id="editStudentName" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                                <select id="editClassName" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option value="">Pilih Kelas</option>
+                                    <option value="3A">3A</option>
+                                    <option value="3B">3B</option>
+                                    <option value="4A">4A</option>
+                                    <option value="4B">4B</option>
+                                    <option value="5A">5A</option>
+                                    <option value="5B">5B</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Minggu Ke</label>
+                                <select id="editWeekNumber" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option value="">Pilih Minggu</option>
+                                    <option value="1">Minggu 1</option>
+                                    <option value="2">Minggu 2</option>
+                                    <option value="3">Minggu 3</option>
+                                    <option value="4">Minggu 4</option>
+                                    <option value="5">Minggu 5</option>
+                                    <option value="6">Minggu 6</option>
+                                    <option value="7">Minggu 7</option>
+                                    <option value="8">Minggu 8</option>
+                                    <option value="9">Minggu 9</option>
+                                    <option value="10">Minggu 10</option>
+                                    <option value="11">Minggu 11</option>
+                                    <option value="12">Minggu 12</option>
+                                    <option value="13">Minggu 13</option>
+                                    <option value="14">Minggu 14</option>
+                                    <option value="15">Minggu 15</option>
+                                    <option value="16">Minggu 16</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Guru</label>
+                                <select id="editTeacherId" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option value="">Pilih Guru</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Scoring Tables -->
+                        <div class="space-y-6">
+                            <h4 class="text-lg font-semibold text-gray-800">Skor HRVPS per Pertemuan</h4>
+
+                            <!-- Meeting 1 -->
+                            <div class="border rounded-lg p-4">
+                                <h5 class="font-medium text-gray-700 mb-3">Pertemuan 1</h5>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                        <select id="editMeeting1_kehadiran"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                        <select id="editMeeting1_membaca"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                        <select id="editMeeting1_kosakata"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                        <select id="editMeeting1_pengucapan"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                        <select id="editMeeting1_speaking"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Meeting 2 -->
+                            <div class="border rounded-lg p-4">
+                                <h5 class="font-medium text-gray-700 mb-3">Pertemuan 2</h5>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                        <select id="editMeeting2_kehadiran" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                        <select id="editMeeting2_membaca" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                        <select id="editMeeting2_kosakata" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                        <select id="editMeeting2_pengucapan" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                        <select id="editMeeting2_speaking" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Meeting 3 -->
+                            <div class="border rounded-lg p-4">
+                                <h5 class="font-medium text-gray-700 mb-3">Pertemuan 3</h5>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Kehadiran (0-5)</label>
+                                        <select id="editMeeting3_kehadiran"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Membaca (0-5)</label>
+                                        <select id="editMeeting3_membaca"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Kosakata (0-5)</label>
+                                        <select id="editMeeting3_kosakata"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Pengucapan (0-5)</label>
+                                        <select id="editMeeting3_pengucapan"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Speaking (0-5)</label>
+                                        <select id="editMeeting3_speaking"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <!-- <option value="">Pilih Skor</option> -->
+                                            <option value="0">Belum</option>
+                                            <option value="1">1. Sangat Kurang</option>
+                                            <option value="2">2. Kurang</option>
+                                            <option value="3">3. Cukup</option>
+                                            <option value="4">4. Baik</option>
+                                            <option value="5">5. Baik Sekali</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Notes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Perkembangan Umum</label>
+                            <textarea id="editProgressNotes" rows="4"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                placeholder="Masukkan catatan perkembangan siswa..."></textarea>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="flex gap-4 pt-4">
+                            <button type="submit" id="updateBtn"
+                                class="bg-primary text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                                Perbarui Penilaian
+                            </button>
+                            <button type="button" id="cancelEditBtn"
+                                class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                Batal
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -273,4 +855,5 @@
 
     <script src="assets/app.js"></script>
 </body>
+
 </html>

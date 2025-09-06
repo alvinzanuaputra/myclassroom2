@@ -17,7 +17,7 @@ function validateScores(scores) {
   const aspects = ['kehadiran', 'membaca', 'kosakata', 'pengucapan', 'speaking'];
   for (const aspect of aspects) {
     const score = scores[aspect];
-    if (typeof score !== 'number' || score < 1 || score > 5 || !Number.isInteger(score)) {
+    if (typeof score !== 'number' || score < 0 || score > 5 || !Number.isInteger(score)) {
       return false;
     }
   }
@@ -55,11 +55,17 @@ router.get('/', async (req, res) => {
       prisma.studentAssessment.count({ where })
     ]);
 
+    // Map assessments to include teacherName for easier frontend access
+    const mappedAssessments = assessments.map(assessment => ({
+      ...assessment,
+      teacherName: assessment.teacher?.name || 'Unknown'
+    }));
+
     const totalPages = Math.ceil(total / parseInt(limit));
 
     res.json({
       success: true,
-      data: assessments,
+      data: mappedAssessments,
       pagination: {
         currentPage: parseInt(page),
         totalPages,
@@ -114,10 +120,10 @@ router.get('/:id', async (req, res) => {
 // POST /api/assessments - Membuat penilaian baru
 router.post('/', async (req, res) => {
   try {
-    const { studentName, className, teacherId, pertemuan, progressNotes } = req.body;
+    const { studentName, className, weekNumber, teacherId, pertemuan, progressNotes } = req.body;
 
     // Validasi input dasar
-    if (!studentName || !className || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
+    if (!studentName || !className || !weekNumber || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
       return res.status(400).json({
         success: false,
         message: 'Data tidak lengkap. Pastikan semua field terisi dengan benar.'
@@ -128,6 +134,14 @@ router.post('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Data pertemuan harus berisi 3 pertemuan'
+      });
+    }
+
+    // Validasi weekNumber
+    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 16) {
+      return res.status(400).json({
+        success: false,
+        message: 'Minggu harus berupa angka antara 1-16'
       });
     }
 
@@ -168,7 +182,7 @@ router.post('/', async (req, res) => {
       if (!validateScores(meeting.scores)) {
         return res.status(400).json({
           success: false,
-          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 1-5.`
+          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
         });
       }
 
@@ -194,6 +208,7 @@ router.post('/', async (req, res) => {
       data: {
         studentName,
         className,
+        weekNumber,
         teacherId: parseInt(teacherId),
         ...meetingScores,
         total_weekly: totalWeekly,
@@ -224,7 +239,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { studentName, className, teacherId, pertemuan, progressNotes } = req.body;
+    const { studentName, className, weekNumber, teacherId, pertemuan, progressNotes } = req.body;
 
     // Cek apakah assessment exists
     const existingAssessment = await prisma.studentAssessment.findUnique({
@@ -239,7 +254,7 @@ router.put('/:id', async (req, res) => {
     }
 
     // Validasi input dasar
-    if (!studentName || !className || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
+    if (!studentName || !className || !weekNumber || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
       return res.status(400).json({
         success: false,
         message: 'Data tidak lengkap. Pastikan semua field terisi dengan benar.'
@@ -250,6 +265,14 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Data pertemuan harus berisi 3 pertemuan'
+      });
+    }
+
+    // Validasi weekNumber
+    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 16) {
+      return res.status(400).json({
+        success: false,
+        message: 'Minggu harus berupa angka antara 1-16'
       });
     }
 
@@ -290,7 +313,7 @@ router.put('/:id', async (req, res) => {
       if (!validateScores(meeting.scores)) {
         return res.status(400).json({
           success: false,
-          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 1-5.`
+          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
         });
       }
 
@@ -317,6 +340,7 @@ router.put('/:id', async (req, res) => {
       data: {
         studentName,
         className,
+        weekNumber,
         teacherId: parseInt(teacherId),
         ...meetingScores,
         total_weekly: totalWeekly,

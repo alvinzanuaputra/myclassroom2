@@ -1,324 +1,366 @@
-# MyClassroom - Rubrik Penilaian Guru
+# 🎓 MyClassroom - Sistem Penilaian HRVPS
 
-Aplikasi web responsif untuk mengelola penilaian siswa dengan sistem rubrik HRVPS (Kehadiran, Membaca, Kosakata, Pengucapan, Speaking). Aplikasi ini dirancang khusus untuk guru di R&S Corner dengan interface berbahasa Indonesia.
+Sistem penilaian digital untuk rubrik HRVPS (Kehadiran, Membaca, Kosakata, Pengucapan, Speaking) yang membantu guru melakukan evaluasi pembelajaran bahasa secara komprehensif dan terstruktur.
 
-## 🚀 Fitur Utama
+## 📋 Daftar Isi
 
-- **Form Input Penilaian**: Input skor HRVPS untuk 3 pertemuan per siswa
-- **Perhitungan Otomatis**: Total mingguan, rata-rata, dan kategori dihitung secara otomatis
-- **CRUD Lengkap**: Create, Read, Update, Delete data penilaian
-- **Search & Pagination**: Pencarian berdasarkan nama siswa dengan pagination
-- **Responsive Design**: Tampilan optimal di desktop dan mobile
-- **Validasi Data**: Validasi skor 0-5 di frontend dan backend
+- [Fitur Utama](#-fitur-utama)
+- [Teknologi](#-teknologi)
+- [Instalasi](#-instalasi)
+- [Rumus Kalkulasi HRVPS](#-rumus-kalkulasi-hrvps)
+- [Panduan Penggunaan](#-panduan-penggunaan)
+- [API Endpoints](#-api-endpoints)
+- [Database Schema](#-database-schema)
+- [Deployment](#-deployment)
+- [Kontribusi](#-kontribusi)
 
-## 📊 Sistem Penilaian
+## ✨ Fitur Utama
 
-### Aspek Penilaian (HRVPS)
-1. **Kehadiran** (0-5)
-2. **Membaca** (0-5) 
-3. **Kosakata** (0-5)
-4. **Pengucapan** (0-5)
-5. **Speaking** (0-5)
+### 🎯 **Penilaian HRVPS**
+- **H** - Kehadiran (0-5)
+- **R** - Membaca (0-5)  
+- **V** - Kosakata (0-5)
+- **P** - Pengucapan (0-5)
+- **S** - Speaking (0-5)
 
-### Perhitungan
-- **Total per Pertemuan**: Jumlah 5 aspek (maksimal 25)
-- **Total Mingguan**: Jumlah 3 pertemuan (maksimal 75)
-- **Rata-rata**: Total mingguan ÷ 3 (2 desimal)
+### 📊 **Manajemen Data**
+- ✅ Input penilaian per pertemuan (3 pertemuan/minggu)
+- ✅ Kalkulasi otomatis total dan rata-rata
+- ✅ Kategorisasi berdasarkan performa
+- ✅ Pencarian dan filter data
+- ✅ Pagination untuk data besar
+- ✅ Edit dan hapus penilaian
 
-### Kategori Berdasarkan Rata-rata
-- **21-25**: Sangat Baik
-- **16-20**: Baik
-- **11-15**: Cukup
-- **6-10**: Kurang
-- **1-5**: Sangat Kurang
+### 👥 **Manajemen Pengguna**
+- ✅ Data guru dan kelas
+- ✅ Catatan perkembangan siswa
+- ✅ Riwayat penilaian lengkap
 
-## 🛠️ Teknologi
+### 🎨 **Interface Modern**
+- ✅ Responsive design (mobile-friendly)
+- ✅ Dark overlay modal untuk edit
+- ✅ Toast notifications
+- ✅ Loading states
+- ✅ Form validation
 
-- **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript
-- **Backend**: Node.js, Express.js
-- **Database**: PostgreSQL (Neon)
-- **ORM**: Prisma
-- **Deployment**: Siap untuk Vercel/Render
+## 🛠 Teknologi
 
-## 📁 Struktur Project
+### **Backend**
+- **Node.js** - Runtime JavaScript
+- **Express.js** - Web framework
+- **Prisma** - ORM database
+- **PostgreSQL** - Database (Neon)
+- **CORS** - Cross-origin resource sharing
 
-```
-myclassroom/
-├── backend/
-│   ├── package.json
-│   ├── src/
-│   │   ├── server.js
-│   │   ├── prismaClient.js
-│   │   └── routes/
-│   │       ├── assessments.js
-│   │       └── teachers.js
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── seed.js
-│   └── .env.example
-├── frontend/
-│   ├── index.html
-│   └── assets/
-│       └── app.js
-└── README.md
-```
+### **Frontend**
+- **HTML5** - Markup
+- **CSS3** - Styling (Tailwind CSS)
+- **JavaScript (ES6+)** - Logic
+- **Fetch API** - HTTP requests
 
-## ⚙️ Setup Lokal
+### **Database**
+- **Neon PostgreSQL** - Cloud database
+- **Prisma Schema** - Database modeling
 
-### Prasyarat
-- Node.js 18+ 
-- PostgreSQL database (disarankan Neon)
-- Git
+## 🚀 Instalasi
 
-### 1. Clone Repository
+### **Prasyarat**
+- Node.js 16+
+- npm atau yarn
+- Database PostgreSQL (Neon)
+
+### **Langkah Instalasi**
+
+1. **Clone Repository**
 ```bash
-git clone <repository-url>
-cd myclassroom
+git clone https://github.com/alvinzanuaputra/myclassroom2.git
+cd myclassroom2
 ```
 
-### 2. Setup Backend
-
+2. **Install Dependencies**
 ```bash
+# Backend
 cd backend
+npm install
+
+# Frontend (jika diperlukan)
+cd ../frontend
 npm install
 ```
 
-### 3. Konfigurasi Database
-
-1. Buat file `.env` dari `.env.example`:
+3. **Setup Environment**
 ```bash
-cp .env.example .env
+# Backend/.env
+DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require"
+NODE_ENV="development"
 ```
 
-2. Edit `.env` dan isi dengan connection string PostgreSQL Neon:
-```env
-DATABASE_URL="postgresql://username:password@ep-example-123456.us-east-1.aws.neon.tech/neondb?sslmode=require"
-PORT=3000
-NODE_ENV=development
+4. **Database Migration**
+```bash
+cd backend
+npx prisma migrate dev
+npx prisma db seed
 ```
 
-### 4. Setup Database
+`Error Handle Databases :`
 
 ```bash
-# Generate Prisma client
-npm run db:generate
-
-# Jalankan migrasi database
-npm run db:migrate
-# ATAU untuk production:
-# npm run db:push
-
-# Seed data guru
-npm run db:seed
+cd backend
+npx prisma migrate dev
+npx prisma migrate reset --force
+npm run seed
 ```
 
-### 5. Jalankan Backend
+5. **Jalankan Aplikasi**
 ```bash
-npm run dev
-```
-Backend akan berjalan di `http://localhost:3000`
+# Backend (Port 3000)
+cd backend
+npm start
 
-### 6. Jalankan Frontend
-Buka `frontend/index.html` di browser atau gunakan live server.
-
-## 🌐 API Endpoints
-
-### Assessments
-- `GET /api/assessments` - List penilaian (dengan pagination & search)
-- `GET /api/assessments/:id` - Detail penilaian
-- `POST /api/assessments` - Buat penilaian baru
-- `PUT /api/assessments/:id` - Update penilaian
-- `DELETE /api/assessments/:id` - Hapus penilaian
-
-### Teachers
-- `GET /api/teachers` - List guru
-- `GET /api/teachers/:id` - Detail guru
-
-### Classes
-- `GET /api/classes` - List kelas (3A, 3B, 4A, 4B, 5A, 5B)
-
-## 📝 Contoh Request API
-
-### POST /api/assessments
-```bash
-curl -X POST http://localhost:3000/api/assessments \
-  -H "Content-Type: application/json" \
-  -d '{
-    "studentName": "Ahmad Rizki",
-    "className": "3A",
-    "teacherId": 1,
-    "pertemuan": [
-      {
-        "meeting": 1,
-        "scores": {
-          "kehadiran": 5,
-          "membaca": 4,
-          "kosakata": 4,
-          "pengucapan": 3,
-          "speaking": 4
-        }
-      },
-      {
-        "meeting": 2,
-        "scores": {
-          "kehadiran": 5,
-          "membaca": 4,
-          "kosakata": 5,
-          "pengucapan": 4,
-          "speaking": 4
-        }
-      },
-      {
-        "meeting": 3,
-        "scores": {
-          "kehadiran": 5,
-          "membaca": 5,
-          "kosakata": 4,
-          "pengucapan": 4,
-          "speaking": 5
-        }
-      }
-    ],
-    "progressNotes": "Siswa menunjukkan perkembangan yang baik dalam speaking dan kosakata."
-  }'
+# Frontend (Port 5000 atau Live Server)
+cd frontend
+# Buka index.html dengan Live Server
 ```
 
-### Response
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "studentName": "Ahmad Rizki",
-    "className": "3A",
-    "teacherId": 1,
-    "meeting1_total": 20,
-    "meeting2_total": 22,
-    "meeting3_total": 23,
-    "total_weekly": 65,
-    "average": 21.67,
-    "category": "Sangat Baik",
-    "progress_notes": "Siswa menunjukkan perkembangan yang baik dalam speaking dan kosakata.",
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T10:30:00.000Z",
-    "teacher": {
-      "id": 1,
-      "name": "Bu Sari"
-    }
-  },
-  "message": "Penilaian berhasil disimpan"
+## 📊 Rumus Kalkulasi HRVPS
+
+### **1. Komponen Penilaian (Per Pertemuan)**
+```
+H = Kehadiran (0-5)
+R = Membaca (0-5)  
+V = Kosakata (0-5)
+P = Pengucapan (0-5)
+S = Speaking (0-5)
+```
+
+### **2. Total Per Pertemuan**
+```javascript
+Total Pertemuan = H + R + V + P + S
+// Maksimal: 25 poin per pertemuan
+```
+
+### **3. Total Mingguan**
+```javascript
+Total Mingguan = Pertemuan1 + Pertemuan2 + Pertemuan3
+// Maksimal: 75 poin (25 × 3)
+```
+
+### **4. Rata-rata**
+```javascript
+Rata-rata = Total Mingguan ÷ 3
+// Dibulatkan 2 desimal
+```
+
+### **5. Kategori Penilaian**
+```javascript
+function calculateCategory(average) {
+  if (average >= 21) return 'Sangat Baik';    // 21-25 (84-100%)
+  if (average >= 16) return 'Baik';           // 16-20 (64-80%)
+  if (average >= 11) return 'Cukup';          // 11-15 (44-60%)
+  if (average >= 6)  return 'Kurang';         // 6-10 (24-40%)
+  return 'Sangat Kurang';                     // 1-5 (4-20%)
+}
+```
+
+### **Contoh Perhitungan**
+
+**Siswa: Ahmad**
+| Pertemuan | H | R | V | P | S | Total |
+|-----------|---|---|---|---|---|-------|
+| 1         | 4 | 3 | 5 | 4 | 3 | **19** |
+| 2         | 3 | 4 | 4 | 5 | 4 | **20** |
+| 3         | 5 | 4 | 3 | 4 | 5 | **21** |
+
+**Hasil:**
+- **Total Mingguan:** 19 + 20 + 21 = **60**
+- **Rata-rata:** 60 ÷ 3 = **20.00**
+- **Kategori:** **Baik** (16-20 range)
+
+## 📖 Panduan Penggunaan
+
+### **1. Input Penilaian Baru**
+1. Isi data siswa (nama, kelas, minggu, guru)
+2. Pilih skor HRVPS untuk setiap pertemuan (0-5)
+3. Tambahkan catatan perkembangan (opsional)
+4. Klik "Simpan Penilaian Baru"
+
+### **2. Edit Penilaian**
+1. Klik tombol "Edit" pada tabel rekap
+2. Modal edit akan terbuka dengan data terpopulasi
+3. Ubah nilai yang diperlukan
+4. Klik "Perbarui Penilaian"
+
+### **3. Pencarian Data**
+- Gunakan search box untuk mencari nama siswa
+- Hasil akan difilter secara real-time
+
+### **4. Navigasi Halaman**
+- Gunakan tombol "Sebelumnya" dan "Selanjutnya"
+- Informasi pagination ditampilkan di bawah tabel
+
+## 🔌 API Endpoints
+
+### **Assessments**
+```
+GET    /api/assessments          # Daftar penilaian (pagination, search)
+POST   /api/assessments          # Buat penilaian baru
+GET    /api/assessments/:id      # Detail penilaian
+PUT    /api/assessments/:id      # Update penilaian
+DELETE /api/assessments/:id      # Hapus penilaian
+```
+
+### **Teachers**
+```
+GET    /api/teachers             # Daftar guru
+POST   /api/teachers             # Buat guru baru
+```
+
+### **Health Check**
+```
+GET    /api/health               # Status server
+```
+
+## 🗄 Database Schema
+
+### **StudentAssessment**
+```prisma
+model StudentAssessment {
+  id                    Int      @id @default(autoincrement())
+  studentName           String
+  className             String
+  weekNumber            Int
+  teacherId             Int
+  
+  // Meeting 1 scores
+  meeting1_kehadiran    Int
+  meeting1_membaca      Int
+  meeting1_kosakata     Int
+  meeting1_pengucapan   Int
+  meeting1_speaking     Int
+  meeting1_total        Int
+  
+  // Meeting 2 scores
+  meeting2_kehadiran    Int
+  meeting2_membaca      Int
+  meeting2_kosakata     Int
+  meeting2_pengucapan   Int
+  meeting2_speaking     Int
+  meeting2_total        Int
+  
+  // Meeting 3 scores
+  meeting3_kehadiran    Int
+  meeting3_membaca      Int
+  meeting3_kosakata     Int
+  meeting3_pengucapan   Int
+  meeting3_speaking     Int
+  meeting3_total        Int
+  
+  // Calculated fields
+  total_weekly          Int
+  average               Float
+  category              String
+  progress_notes        String?
+  
+  // Relations
+  teacher               Teacher  @relation(fields: [teacherId], references: [id])
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+```
+
+### **Teacher**
+```prisma
+model Teacher {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  notes       String?
+  assessments StudentAssessment[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 }
 ```
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### **Vercel (Recommended)**
+1. Push code ke GitHub
+2. Connect repository di Vercel
+3. Set environment variables
+4. Deploy otomatis
 
-1. **Setup Vercel Project**
-```bash
-npm install -g vercel
-vercel login
-vercel
-```
-
-2. **Environment Variables**
-Tambahkan di Vercel dashboard:
-```
-DATABASE_URL=your_neon_connection_string
+### **Environment Variables**
+```env
+DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=require
 NODE_ENV=production
 ```
 
-3. **Deploy Database**
-```bash
-npx prisma migrate deploy
-npx prisma db seed
-```
+Lihat [DEPLOYMENT.md](DEPLOYMENT.md) untuk panduan lengkap.
 
-### Render
+## 🎯 Fitur Khusus
 
-1. **Backend Service**
-   - Build Command: `cd backend && npm install && npx prisma generate`
-   - Start Command: `cd backend && npm start`
+### **Nilai 0 (Belum)**
+- Aspek yang tidak dinilai otomatis bernilai 0
+- Label "Belum" untuk indikasi belum ada penilaian
+- Tidak mempengaruhi perhitungan negatif
 
-2. **Frontend Static Site**
-   - Build Command: `# No build needed`
-   - Publish Directory: `frontend`
+### **Fleksibilitas Input**
+- Form tidak wajib diisi semua (non-required)
+- Guru bisa mengisi sebagian aspek
+- Sistem tetap menghitung dengan nilai yang ada
 
-3. **Environment Variables**
-```
-DATABASE_URL=your_neon_connection_string
-NODE_ENV=production
-```
+### **Modal Edit**
+- Dark overlay untuk fokus editing
+- Multiple cara close (X, Cancel, ESC, click outside)
+- Form terpopulasi otomatis dengan data existing
 
-## 🧪 Testing
+## 📱 Responsive Design
 
-### Manual Testing
-1. Buka aplikasi di browser
-2. Test form input dengan data valid
-3. Test validasi (skor di luar 0-5)
-4. Test search dan pagination
-5. Test edit dan delete
+- ✅ Mobile-first approach
+- ✅ Tablet compatibility
+- ✅ Desktop optimization
+- ✅ Touch-friendly interface
 
-### Data Guru (Seeded)
-- Bu Sari (ID: 1)
-- Pak Budi (ID: 2)
-- Bu Ani (ID: 3)
-- Pak Deni (ID: 4)
-- Bu Rina (ID: 5)
+## 🔒 Keamanan
 
-## 🔧 Troubleshooting
+- ✅ Input validation (frontend & backend)
+- ✅ SQL injection protection (Prisma ORM)
+- ✅ CORS configuration
+- ✅ Environment variables untuk sensitive data
 
-### Database Connection Error
-```bash
-# Pastikan DATABASE_URL benar
-echo $DATABASE_URL
+## 📈 Statistik Sistem
 
-# Reset database
-npx prisma migrate reset
-npm run db:seed
-```
-
-### CORS Error
-Pastikan backend berjalan di port 3000 dan frontend mengakses URL yang benar.
-
-### Prisma Error
-```bash
-# Regenerate client
-npx prisma generate
-
-# Reset dan migrate ulang
-npx prisma migrate reset
-```
-
-## 📋 Acceptance Criteria
-
-✅ **CRUD Lengkap**: Create, Read, Update, Delete penilaian  
-✅ **Perhitungan Otomatis**: Total, rata-rata, kategori dihitung server  
-✅ **UI Bahasa Indonesia**: Semua label, tombol, pesan dalam Bahasa Indonesia  
-✅ **Data Tersimpan**: Semua data persist ke PostgreSQL (Neon)  
-✅ **Responsive Design**: Tampilan optimal di mobile & desktop  
-✅ **Validasi**: Skor 0-5, input required, error handling  
-✅ **Search & Pagination**: Pencarian nama siswa dengan pagination  
+- Total Guru: Dinamis
+- Total Penilaian: Real-time count
+- Kelas Aktif: Berdasarkan data
+- Rata-rata Skor: Kalkulasi otomatis
 
 ## 🤝 Kontribusi
 
 1. Fork repository
 2. Buat feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Buat Pull Request
 
 ## 📄 Lisensi
 
-MIT License - lihat file LICENSE untuk detail.
+Distributed under the MIT License. See `LICENSE` for more information.
 
-## 📞 Support
+## 👨‍💻 Developer
 
-Jika mengalami masalah atau butuh bantuan:
-1. Cek troubleshooting di atas
-2. Buat issue di GitHub
-3. Hubungi tim development
+**Tim Pengembang MyClassroom**
+- Backend: Node.js + Express + Prisma
+- Frontend: HTML + CSS + JavaScript
+- Database: PostgreSQL (Neon)
+- Deployment: Vercel
+
+## 📞 Kontak & Support
+
+My Website : https://alvinzanuaputra.vercel.app/contact
+
+Email : zanuaputraalvin123@gmail.com
 
 ---
 
-**MyClassroom** - Memudahkan guru dalam mengelola penilaian siswa dengan sistem rubrik yang terstruktur dan mudah digunakan.
+**MyClassroom v1.0** - Sistem Penilaian HRVPS Digital 🎓

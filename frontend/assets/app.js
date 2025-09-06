@@ -16,7 +16,7 @@ const editModal = document.getElementById('editModal');
 const loadingSpinner = document.getElementById('loadingSpinner');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toastMessage');
-const assessmentTable = document.getElementById('assessmentTable');
+const assessmentTableBody = document.getElementById('assessmentTableBody');
 const searchInput = document.getElementById('searchInput');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
@@ -50,12 +50,42 @@ function setupEventListeners() {
     // Cancel button
     document.getElementById('cancelBtn').addEventListener('click', resetForm);
     
-    // Modal close
-    editModal.addEventListener('click', function(e) {
-        if (e.target === editModal) {
+    // Modal close functionality
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    
+    // Close modal when clicking close button (X)
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeEditModal);
+    }
+    
+    // Close modal when clicking cancel button
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', closeEditModal);
+    }
+    
+    // Close modal when clicking outside (on overlay)
+    if (editModal) {
+        editModal.addEventListener('click', function(e) {
+            if (e.target === editModal) {
+                closeEditModal();
+            }
+        });
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && editModal && !editModal.classList.contains('hidden')) {
             closeEditModal();
         }
     });
+    
+    // Edit form submission
+    if (editForm) {
+        editForm.addEventListener('submit', handleEditFormSubmit);
+    }
 }
 
 // API Functions
@@ -105,6 +135,26 @@ async function loadTeachers() {
     }
 }
 
+// Load teachers data for edit form
+async function loadTeachersForEdit() {
+    try {
+        const response = await apiCall('/teachers');
+        teachers = response.data;
+        
+        const teacherSelect = document.getElementById('editTeacherId');
+        teacherSelect.innerHTML = '<option value="">Pilih Guru</option>';
+        
+        teachers.forEach(teacher => {
+            const option = document.createElement('option');
+            option.value = teacher.id;
+            option.textContent = teacher.name;
+            teacherSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading teachers for edit:', error);
+    }
+}
+
 // Load assessments data
 async function loadAssessments(page = 1, search = '') {
     try {
@@ -129,7 +179,7 @@ async function loadAssessments(page = 1, search = '') {
 
 // Display assessments in table with detailed score format
 function displayAssessments(data) {
-    const tbody = assessmentTable.querySelector('tbody');
+    const tbody = assessmentTableBody;
     
     if (data.length === 0) {
         tbody.innerHTML = `
@@ -142,30 +192,45 @@ function displayAssessments(data) {
         return;
     }
 
-    // Group assessments by class for header display
-    const groupedByClass = data.reduce((acc, assessment) => {
-        if (!acc[assessment.className]) {
-            acc[assessment.className] = [];
+    // Sort data by weekNumber first, then by className
+    const sortedData = data.sort((a, b) => {
+        if (a.weekNumber !== b.weekNumber) {
+            return a.weekNumber - b.weekNumber;
         }
-        acc[assessment.className].push(assessment);
+        return a.className.localeCompare(b.className);
+    });
+
+    // Group assessments by week only for better organization
+    const groupedByWeek = sortedData.reduce((acc, assessment) => {
+        const weekKey = assessment.weekNumber || 1;
+        if (!acc[weekKey]) {
+            acc[weekKey] = {
+                weekNumber: weekKey,
+                assessments: []
+            };
+        }
+        acc[weekKey].assessments.push(assessment);
         return acc;
     }, {});
 
     let tableHTML = '';
     
-    Object.keys(groupedByClass).forEach(className => {
-        const classAssessments = groupedByClass[className];
+    // Sort weeks numerically
+    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    sortedWeeks.forEach(weekKey => {
+        const group = groupedByWeek[weekKey];
         
-        // Add class header
+        // Add week header
         tableHTML += `
             <tr class="bg-blue-50">
                 <td colspan="11" class="px-6 py-3 text-left font-semibold text-blue-800">
-                    Kelas: ${className} | Minggu ke: 1
+                    Minggu ${group.weekNumber}
                 </td>
             </tr>
         `;
         
-        classAssessments.forEach((assessment, index) => {
+        group.assessments.forEach((assessment, index) => {
             // Format detailed scores for each meeting
             const meeting1Scores = `${assessment.meeting1_kehadiran}-${assessment.meeting1_membaca}-${assessment.meeting1_kosakata}-${assessment.meeting1_pengucapan}-${assessment.meeting1_speaking} (${assessment.meeting1_total})`;
             const meeting2Scores = `${assessment.meeting2_kehadiran}-${assessment.meeting2_membaca}-${assessment.meeting2_kosakata}-${assessment.meeting2_pengucapan}-${assessment.meeting2_speaking} (${assessment.meeting2_total})`;
@@ -191,12 +256,13 @@ function displayAssessments(data) {
                     break;
             }
             
+            // <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">Minggu ${assessment.weekNumber || 1}</td>
             tableHTML += `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${index + 1}</td>
+                <tr class="hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.studentName}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.className}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.teacher.name}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.className}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.teacherName}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting1Scores}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting2Scores}</td>
                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting3Scores}</td>
@@ -251,6 +317,43 @@ function updatePagination(pagination) {
     document.getElementById('nextBtn').disabled = !hasNext;
 }
 
+// Get form data
+function getFormData() {
+    const studentName = document.getElementById('studentName').value;
+    const className = document.getElementById('className').value;
+    const weekNumber = parseInt(document.getElementById('weekNumber').value);
+    const teacherId = parseInt(document.getElementById('teacherId').value);
+    const progressNotes = document.getElementById('progressNotes').value;
+    
+    // Debug log to check values
+    console.log('Form data:', { studentName, className, weekNumber, teacherId });
+    
+    const pertemuan = [];
+    for (let i = 1; i <= 3; i++) {
+        const scores = {
+            kehadiran: parseInt(document.getElementById(`meeting${i}_kehadiran`).value) || 0,
+            membaca: parseInt(document.getElementById(`meeting${i}_membaca`).value) || 0,
+            kosakata: parseInt(document.getElementById(`meeting${i}_kosakata`).value) || 0,
+            pengucapan: parseInt(document.getElementById(`meeting${i}_pengucapan`).value) || 0,
+            speaking: parseInt(document.getElementById(`meeting${i}_speaking`).value) || 0
+        };
+        
+        pertemuan.push({
+            meeting: i,
+            scores
+        });
+    }
+    
+    return {
+        studentName,
+        className,
+        weekNumber,
+        teacherId,
+        pertemuan,
+        progressNotes
+    };
+}
+
 // Form submission handler
 async function handleFormSubmit(e) {
     e.preventDefault();
@@ -280,38 +383,6 @@ async function handleFormSubmit(e) {
     }
 }
 
-// Get form data
-function getFormData() {
-    const studentName = document.getElementById('studentName').value;
-    const className = document.getElementById('className').value;
-    const teacherId = parseInt(document.getElementById('teacherId').value);
-    const progressNotes = document.getElementById('progressNotes').value;
-    
-    const pertemuan = [];
-    for (let i = 1; i <= 3; i++) {
-        const scores = {
-            kehadiran: parseInt(document.getElementById(`meeting${i}_kehadiran`).value),
-            membaca: parseInt(document.getElementById(`meeting${i}_membaca`).value),
-            kosakata: parseInt(document.getElementById(`meeting${i}_kosakata`).value),
-            pengucapan: parseInt(document.getElementById(`meeting${i}_pengucapan`).value),
-            speaking: parseInt(document.getElementById(`meeting${i}_speaking`).value)
-        };
-        
-        pertemuan.push({
-            meeting: i,
-            scores
-        });
-    }
-    
-    return {
-        studentName,
-        className,
-        teacherId,
-        pertemuan,
-        progressNotes
-    };
-}
-
 // Search handler
 function handleSearch() {
     const searchTerm = searchInput.value.trim();
@@ -333,21 +404,45 @@ async function editAssessment(id) {
         editingId = id;
         
         // Populate form with existing data
-        document.getElementById('studentName').value = assessment.studentName;
-        document.getElementById('className').value = assessment.className;
-        document.getElementById('teacherId').value = assessment.teacherId;
-        document.getElementById('progressNotes').value = assessment.progress_notes || '';
+        document.getElementById('editStudentName').value = assessment.studentName;
+        document.getElementById('editClassName').value = assessment.className;
+        document.getElementById('editWeekNumber').value = assessment.weekNumber || 1;
+        document.getElementById('editTeacherId').value = assessment.teacherId;
+        document.getElementById('editProgressNotes').value = assessment.progress_notes || '';
         
-        // Note: We would need to store individual scores to populate them
-        // For now, we'll show a simplified edit form
-        document.getElementById('submitBtn').textContent = 'Perbarui Penilaian';
+        // Populate all meeting scores for dropdowns
+        // Meeting 1
+        document.getElementById('editMeeting1_kehadiran').value = assessment.meeting1_kehadiran;
+        document.getElementById('editMeeting1_membaca').value = assessment.meeting1_membaca;
+        document.getElementById('editMeeting1_kosakata').value = assessment.meeting1_kosakata;
+        document.getElementById('editMeeting1_pengucapan').value = assessment.meeting1_pengucapan;
+        document.getElementById('editMeeting1_speaking').value = assessment.meeting1_speaking;
         
-        // Scroll to form
-        document.getElementById('assessmentForm').scrollIntoView({ behavior: 'smooth' });
+        // Meeting 2
+        document.getElementById('editMeeting2_kehadiran').value = assessment.meeting2_kehadiran;
+        document.getElementById('editMeeting2_membaca').value = assessment.meeting2_membaca;
+        document.getElementById('editMeeting2_kosakata').value = assessment.meeting2_kosakata;
+        document.getElementById('editMeeting2_pengucapan').value = assessment.meeting2_pengucapan;
+        document.getElementById('editMeeting2_speaking').value = assessment.meeting2_speaking;
         
-        showToast('Mode edit aktif. Silakan ubah data dan simpan.');
+        // Meeting 3
+        document.getElementById('editMeeting3_kehadiran').value = assessment.meeting3_kehadiran;
+        document.getElementById('editMeeting3_membaca').value = assessment.meeting3_membaca;
+        document.getElementById('editMeeting3_kosakata').value = assessment.meeting3_kosakata;
+        document.getElementById('editMeeting3_pengucapan').value = assessment.meeting3_pengucapan;
+        document.getElementById('editMeeting3_speaking').value = assessment.meeting3_speaking;
+        
+        // Load teachers for the edit form
+        await loadTeachersForEdit();
+        document.getElementById('editTeacherId').value = assessment.teacherId;
+        
+        // Show modal
+        document.getElementById('editModal').classList.remove('hidden');
+        
+        showToast('Mode edit aktif. Semua nilai penilaian telah dimuat.');
     } catch (error) {
         console.error('Error loading assessment for edit:', error);
+        showToast('Gagal memuat data untuk edit', 'error');
     }
 }
 
@@ -393,18 +488,105 @@ function showLoading(show) {
 
 // Show toast notification
 function showToast(message, type = 'success') {
-    toastMessage.textContent = message;
+    const toastElement = document.getElementById('toast');
+    const toastMessageElement = document.getElementById('toastMessage');
     
-    const toastDiv = toast.querySelector('div');
-    toastDiv.className = `px-6 py-3 rounded-lg shadow-lg ${
-        type === 'error' ? 'bg-red-500' : 'bg-green-500'
-    } text-white`;
+    if (!toastElement || !toastMessageElement) {
+        console.error('Toast elements not found');
+        return;
+    }
     
-    toast.classList.remove('hidden');
+    toastMessageElement.textContent = message;
+    
+    const toastDiv = toastElement.querySelector('div');
+    if (toastDiv) {
+        toastDiv.className = `px-6 py-3 rounded-lg shadow-lg ${
+            type === 'error' ? 'bg-red-500' : 'bg-green-500'
+        } text-white`;
+    }
+    
+    toastElement.classList.remove('hidden');
     
     setTimeout(() => {
-        toast.classList.add('hidden');
+        toastElement.classList.add('hidden');
     }, 3000);
+}
+
+// Handle edit form submission
+async function handleEditFormSubmit(e) {
+    e.preventDefault();
+    
+    if (!editingId) {
+        showToast('Error: No assessment selected for editing', 'error');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        
+        // Collect form data from edit modal
+        const formData = {
+            studentName: document.getElementById('editStudentName').value,
+            className: document.getElementById('editClassName').value,
+            weekNumber: parseInt(document.getElementById('editWeekNumber').value),
+            teacherId: parseInt(document.getElementById('editTeacherId').value),
+            progressNotes: document.getElementById('editProgressNotes').value,
+            pertemuan: [
+                {
+                    meeting: 1,
+                    scores: {
+                        kehadiran: parseInt(document.getElementById('editMeeting1_kehadiran').value) || 0,
+                        membaca: parseInt(document.getElementById('editMeeting1_membaca').value) || 0,
+                        kosakata: parseInt(document.getElementById('editMeeting1_kosakata').value) || 0,
+                        pengucapan: parseInt(document.getElementById('editMeeting1_pengucapan').value) || 0,
+                        speaking: parseInt(document.getElementById('editMeeting1_speaking').value) || 0
+                    }
+                },
+                {
+                    meeting: 2,
+                    scores: {
+                        kehadiran: parseInt(document.getElementById('editMeeting2_kehadiran').value) || 0,
+                        membaca: parseInt(document.getElementById('editMeeting2_membaca').value) || 0,
+                        kosakata: parseInt(document.getElementById('editMeeting2_kosakata').value) || 0,
+                        pengucapan: parseInt(document.getElementById('editMeeting2_pengucapan').value) || 0,
+                        speaking: parseInt(document.getElementById('editMeeting2_speaking').value) || 0
+                    }
+                },
+                {
+                    meeting: 3,
+                    scores: {
+                        kehadiran: parseInt(document.getElementById('editMeeting3_kehadiran').value) || 0,
+                        membaca: parseInt(document.getElementById('editMeeting3_membaca').value) || 0,
+                        kosakata: parseInt(document.getElementById('editMeeting3_kosakata').value) || 0,
+                        pengucapan: parseInt(document.getElementById('editMeeting3_pengucapan').value) || 0,
+                        speaking: parseInt(document.getElementById('editMeeting3_speaking').value) || 0
+                    }
+                }
+            ]
+        };
+        
+        // Debug logging
+        console.log('Edit form data:', formData);
+        console.log('Editing ID:', editingId);
+        
+        // Submit update
+        const response = await apiCall(`/assessments/${editingId}`, {
+            method: 'PUT',
+            body: JSON.stringify(formData)
+        });
+        
+        console.log('Update response:', response);
+        
+        showToast('Penilaian berhasil diperbarui!', 'success');
+        closeEditModal();
+        loadAssessments();
+        
+    } catch (error) {
+        console.error('Error updating assessment:', error);
+        showToast('Gagal memperbarui penilaian: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Make functions globally available

@@ -22,6 +22,7 @@ model StudentAssessment {
   studentName       String
   className         String
   teacherId         Int
+  weekNumber        Int      @default(1)  // Tambah field untuk minggu ke berapa
   
   // Meeting 1 scores
   meeting1_kehadiran    Int @default(1)
@@ -55,4 +56,6 @@ model StudentAssessment {
   updatedAt         DateTime  @updatedAt
 
   teacher Teacher @relation(fields: [teacherId], references: [id])
+  
+  @@unique([studentName, className, teacherId, weekNumber]) // Pastikan satu siswa hanya punya satu record per minggu
 }

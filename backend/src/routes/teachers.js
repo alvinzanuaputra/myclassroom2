@@ -7,12 +7,25 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const teachers = await prisma.teacher.findMany({
+      include: {
+        _count: {
+          select: {
+            assessments: true
+          }
+        }
+      },
       orderBy: { name: 'asc' }
     });
 
+    // Transform the data to include assessmentCount
+    const teachersWithCount = teachers.map(teacher => ({
+      ...teacher,
+      assessmentCount: teacher._count.assessments
+    }));
+
     res.json({
       success: true,
-      data: teachers,
+      data: teachersWithCount,
       message: 'Data guru berhasil diambil'
     });
   } catch (error) {
