@@ -120,59 +120,37 @@ router.get('/:id', async (req, res) => {
 // POST /api/assessments - Membuat penilaian baru
 router.post('/', async (req, res) => {
   try {
+    console.log('Received assessment data:', JSON.stringify(req.body, null, 2));
     const { studentName, className, weekNumber, teacherId, pertemuan, progressNotes } = req.body;
 
     // Validasi input dasar
     if (!studentName || !className || !weekNumber || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
+      console.error('Validation failed - Missing required fields:', { studentName, className, weekNumber, teacherId, pertemuan });
       return res.status(400).json({
         success: false,
         message: 'Data tidak lengkap. Pastikan semua field terisi dengan benar.'
       });
     }
 
-    if (pertemuan.length !== 3) {
-      return res.status(400).json({
-        success: false,
-        message: 'Data pertemuan harus berisi 3 pertemuan'
-      });
-    }
-
-    // Validasi weekNumber
-    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 16) {
-      return res.status(400).json({
-        success: false,
-        message: 'Minggu harus berupa angka antara 1-16'
-      });
-    }
-
-    // Validasi guru exists
-    const teacher = await prisma.teacher.findUnique({
-      where: { id: parseInt(teacherId) }
-    });
-
-    if (!teacher) {
-      return res.status(404).json({
-        success: false,
-        message: 'Guru tidak ditemukan'
-      });
-    }
-
-    // Validasi kelas
-    const validClasses = ['3A', '3B', '4A', '4B', '5A', '5B'];
-    if (!validClasses.includes(className)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Kelas tidak valid'
-      });
-    }
-
     // Validasi dan hitung skor per pertemuan
     const meetingTotals = [];
     const meetingScores = {};
+    const isClass5 = className.startsWith('5');
+    const expectedMeetings = isClass5 ? 2 : 3;
     
-    for (let i = 0; i < 3; i++) {
+    // Validate we have the correct number of meetings
+    if (pertemuan.length !== expectedMeetings) {
+      console.error(`Validation failed - Expected ${expectedMeetings} meetings for class ${className}, got ${pertemuan.length}`);
+      return res.status(400).json({
+        success: false,
+        message: `Kelas ${className} membutuhkan ${expectedMeetings} pertemuan`
+      });
+    }
+    
+    for (let i = 0; i < expectedMeetings; i++) {
       const meeting = pertemuan[i];
-      if (meeting.meeting !== i + 1) {
+      if (!meeting || meeting.meeting !== i + 1) {
+        console.error(`Validation failed - Invalid meeting data at index ${i}:`, meeting);
         return res.status(400).json({
           success: false,
           message: `Data pertemuan ${i + 1} tidak valid`
@@ -180,6 +158,7 @@ router.post('/', async (req, res) => {
       }
 
       if (!validateScores(meeting.scores)) {
+        console.error(`Validation failed - Invalid scores for meeting ${i + 1}:`, meeting.scores);
         return res.status(400).json({
           success: false,
           message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
@@ -200,37 +179,101 @@ router.post('/', async (req, res) => {
 
     // Hitung total mingguan dan rata-rata
     const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0);
-    const average = Number((totalWeekly / 3).toFixed(2));
+    const average = Number((totalWeekly / expectedMeetings).toFixed(2));
     const category = calculateCategory(average);
 
+    // Validasi weekNumber
+    if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 16) {
+      console.error('Validation failed - Invalid week number:', weekNumber);
+      return res.status(400).json({
+        success: false,
+        message: 'Minggu harus berupa angka antara 1-16'
+      });
+    }
+
+    // Validasi guru exists
+    const teacher = await prisma.teacher.findUnique({
+      where: { id: parseInt(teacherId) }
+    });
+
+    if (!teacher) {
+      console.error('Validation failed - Teacher not found:', teacherId);
+      return res.status(404).json({
+        success: false,
+        message: 'Guru tidak ditemukan'
+      });
+    }
+
+    // Validasi kelas
+    const validClasses = ['3A', '3B', '4A', '4B', '5A', '5B'];
+    if (!validClasses.includes(className)) {
+      console.error('Validation failed - Invalid class:', className);
+      return res.status(400).json({
+        success: false,
+        message: 'Kelas tidak valid'
+      });
+    }
+
     // Simpan ke database
-    const assessment = await prisma.studentAssessment.create({
-      data: {
+    try {
+      // Prepare data with default values for meeting 3 if it's class 5
+      const assessmentData = {
         studentName,
         className,
-        weekNumber,
+        weekNumber: parseInt(weekNumber),
         teacherId: parseInt(teacherId),
         ...meetingScores,
         total_weekly: totalWeekly,
         average,
         category,
         progress_notes: progressNotes || null
-      },
-      include: {
-        teacher: true
-      }
-    });
+      };
 
-    res.status(201).json({
-      success: true,
-      data: assessment,
-      message: 'Penilaian berhasil disimpan'
-    });
+      // If it's class 5, set meeting 3 fields to 0
+      if (isClass5) {
+        const meeting3Fields = [
+          'meeting3_kehadiran', 'meeting3_membaca', 'meeting3_kosakata',
+          'meeting3_pengucapan', 'meeting3_speaking', 'meeting3_total'
+        ];
+        
+        meeting3Fields.forEach(field => {
+          assessmentData[field] = 0;
+        });
+      }
+
+      const assessment = await prisma.studentAssessment.create({
+        data: assessmentData,
+        include: {
+          teacher: true
+        }
+      });
+
+      console.log('Assessment created successfully:', assessment.id);
+      return res.status(201).json({
+        success: true,
+        data: {
+          ...assessment,
+          teacherName: assessment.teacher?.name || 'Unknown'
+        },
+        message: 'Penilaian berhasil disimpan'
+      });
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      // Return more specific error message for unique constraint violation
+      if (dbError.code === 'P2002') {
+        return res.status(400).json({
+          success: false,
+          message: 'Data penilaian untuk siswa ini sudah ada di minggu yang sama'
+        });
+      }
+      throw dbError;
+    }
   } catch (error) {
-    console.error('Error membuat penilaian:', error);
-    res.status(500).json({
+    console.error('Unexpected error in POST /api/assessments:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Gagal menyimpan penilaian'
+      message: 'Terjadi kesalahan server. Silakan coba lagi nanti.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

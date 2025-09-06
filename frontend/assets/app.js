@@ -1,9 +1,8 @@
 // Configuration
-const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
     ? 'http://localhost:3000/api' 
     : window.location.origin + '/api';
 
-// Add debug log
 console.log('Frontend API Base URL:', API_BASE_URL);
 
 // State management
@@ -12,6 +11,28 @@ let currentSearch = '';
 let editingId = null;
 let teachers = [];
 let assessments = [];
+
+// Class grouping configuration for grades 3, 4, 5
+const CLASS_GROUPS = {
+    '3': {
+        name: 'Kelas 3',
+        color: 'bg-green-50 border-l-4 border-green-400',
+        headerColor: 'bg-green-100 text-green-800',
+        priority: 1,
+    },
+    '4': {
+        name: 'Kelas 4',
+        color: 'bg-blue-50 border-l-4 border-blue-400',
+        headerColor: 'bg-blue-100 text-blue-800',
+        priority: 2,
+    },
+    '5': {
+        name: 'Kelas 5',
+        color: 'bg-purple-50 border-l-4 border-purple-400',
+        headerColor: 'bg-purple-100 text-purple-800',
+        priority: 3,
+    }
+};
 
 // DOM Elements
 const assessmentForm = document.getElementById('assessmentForm');
@@ -30,46 +51,116 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTeachers();
     loadAssessments();
     setupEventListeners();
+    setupClassFilters();
+    setupClassChangeHandler();
 });
+
+// Setup class change handler to show/hide meeting 3 inputs for class 5
+function setupClassChangeHandler() {
+    const classNameSelect = document.getElementById('className');
+    const editClassNameSelect = document.getElementById('editClassName');
+    
+    if (classNameSelect) {
+        classNameSelect.addEventListener('change', (e) => {
+            const isClass5 = e.target.value.startsWith('5');
+            toggleMeeting3Inputs(isClass5);
+        });
+    }
+    
+    if (editClassNameSelect) {
+        editClassNameSelect.addEventListener('change', (e) => {
+            const isClass5 = e.target.value.startsWith('5');
+            toggleMeeting3Inputs(isClass5, 'edit');
+        });
+    }
+}
+
+// Toggle meeting 3 inputs visibility based on class selection
+function toggleMeeting3Inputs(isClass5, prefix = '') {
+    const meeting3Container = document.getElementById(`${prefix}meeting3Container`);
+    const meeting3Inputs = meeting3Container ? meeting3Container.querySelectorAll('input, select') : [];
+    const class5Indicator = document.getElementById(prefix ? 'editClass5Indicator' : 'class5Indicator');
+    
+    // Toggle form inputs
+    if (meeting3Container) {
+        meeting3Container.style.display = isClass5 ? 'none' : 'block';
+        
+        // Clear and disable inputs when hiding meeting 3
+        if (isClass5) {
+            meeting3Inputs.forEach(input => {
+                if (input.type === 'select-one') {
+                    input.selectedIndex = 0; // Reset to first option
+                } else {
+                    input.value = '0';
+                }
+                input.disabled = true;
+            });
+        } else {
+            meeting3Inputs.forEach(input => {
+                input.disabled = false;
+            });
+        }
+    }
+    
+    // Toggle class 5 indicator
+    if (class5Indicator) {
+        class5Indicator.style.display = isClass5 ? 'block' : 'none';
+    }
+    
+    // Toggle table column
+    toggleMeeting3Column(isClass5);
+}
+
+// Toggle visibility of meeting 3 column in the table
+function toggleMeeting3Column(hide) {
+    const table = document.getElementById('assessmentTable');
+    if (!table) return;
+    
+    // Find all header and data cells for meeting 3 (8th column, 0-indexed)
+    const headerCells = table.querySelectorAll('th:nth-child(8)');
+    const dataCells = table.querySelectorAll('td:nth-child(8)');
+    
+    // Toggle visibility
+    const displayValue = hide ? 'none' : '';
+    
+    headerCells.forEach(cell => {
+        cell.style.display = displayValue;
+    });
+    
+    dataCells.forEach(cell => {
+        cell.style.display = displayValue;
+    });
+}
 
 // Event Listeners
 function setupEventListeners() {
-    // Form submission
     assessmentForm.addEventListener('submit', handleFormSubmit);
     
-    // Search functionality
     document.getElementById('searchBtn').addEventListener('click', handleSearch);
     searchInput.addEventListener('input', handleSearch);
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             handleSearch();
         }
     });
     
-    // Pagination
     prevBtn.addEventListener('click', () => changePage(currentPage - 1));
     nextBtn.addEventListener('click', () => changePage(currentPage + 1));
-    
-    // Cancel button
     document.getElementById('cancelBtn').addEventListener('click', resetForm);
     
-    // Modal close functionality
+    // Modal event listeners
     const closeModalBtn = document.getElementById('closeModalBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
-    const editModal = document.getElementById('editModal');
     const editForm = document.getElementById('editForm');
     
-    // Close modal when clicking close button (X)
     if (closeModalBtn) {
         closeModalBtn.addEventListener('click', closeEditModal);
     }
     
-    // Close modal when clicking cancel button
     if (cancelEditBtn) {
         cancelEditBtn.addEventListener('click', closeEditModal);
     }
     
-    // Close modal when clicking outside (on overlay)
     if (editModal) {
         editModal.addEventListener('click', function(e) {
             if (e.target === editModal) {
@@ -78,14 +169,12 @@ function setupEventListeners() {
         });
     }
     
-    // Close modal with Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && editModal && !editModal.classList.contains('hidden')) {
             closeEditModal();
         }
     });
     
-    // Edit form submission
     if (editForm) {
         editForm.addEventListener('submit', handleEditFormSubmit);
     }
@@ -103,15 +192,30 @@ async function apiCall(endpoint, options = {}) {
             ...options
         });
         
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         
         if (!response.ok) {
-            throw new Error(data.message || 'Terjadi kesalahan');
+            const error = new Error(data.message || 'Terjadi kesalahan');
+            error.response = data;
+            error.status = response.status;
+            console.error('API Error:', {
+                endpoint,
+                status: response.status,
+                statusText: response.statusText,
+                response: data
+            });
+            throw error;
         }
         
         return data;
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('API Call Error:', {
+            endpoint,
+            error: error.message,
+            response: error.response,
+            stack: error.stack
+        });
+        showToast(error.message || 'Terjadi kesalahan', 'error');
         throw error;
     } finally {
         showLoading(false);
@@ -139,7 +243,7 @@ async function loadTeachers() {
 }
 
 // Load teachers data for edit form
-async function loadTeachersForEdit() {
+async function loadTeachersForEdit(selectedTeacherId = null) {
     try {
         const response = await apiCall('/teachers');
         teachers = response.data;
@@ -151,10 +255,18 @@ async function loadTeachersForEdit() {
             const option = document.createElement('option');
             option.value = teacher.id;
             option.textContent = teacher.name;
+            // Set selected attribute if this is the teacher we want to select
+            if (selectedTeacherId && teacher.id.toString() === selectedTeacherId.toString()) {
+                option.selected = true;
+            }
             teacherSelect.appendChild(option);
         });
+        
+        return teachers;
     } catch (error) {
         console.error('Error loading teachers for edit:', error);
+        showToast('Gagal memuat data guru', 'error');
+        return [];
     }
 }
 
@@ -173,6 +285,7 @@ async function loadAssessments(page = 1, search = '') {
         assessments = assessmentsData;
         displayAssessments(assessmentsData);
         updatePagination(pagination);
+        
         currentPage = page;
         currentSearch = search;
     } catch (error) {
@@ -180,128 +293,230 @@ async function loadAssessments(page = 1, search = '') {
     }
 }
 
-// Display assessments in table with detailed score format
+// Calculate attendance percentage
+function calculateAttendancePercentage(assessment) {
+    if (!assessment || !assessment.className) return '0.0';
+    
+    const isClass5 = assessment.className.startsWith('5');
+    const maxMeetings = isClass5 ? 2 : 3;
+    const maxPossibleScore = 25 * maxMeetings; // 25 per meeting
+    
+    let totalScore = 0;
+    
+    for (let i = 1; i <= maxMeetings; i++) {
+        const meetingTotal = assessment[`meeting${i}_total`] || 0;
+        totalScore += Math.min(25, Math.max(0, meetingTotal)); // Ensure value is between 0-25
+    }
+    
+    // Calculate percentage relative to the maximum possible for the class
+    const percentage = maxPossibleScore > 0 ? 
+        (totalScore / maxPossibleScore) * 100 : 0;
+        
+    return percentage.toFixed(1);
+}
+
+// Enhanced display function with better class grouping
 function displayAssessments(data) {
     const tbody = assessmentTableBody;
     
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="px-4 py-8 text-center text-gray-500">
-                    Tidak ada data penilaian
+                <td colspan="13" class="px-4 py-8 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <svg class="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg font-medium text-gray-900">Tidak ada data penilaian</p>
+                        <p class="text-sm text-gray-500">Mulai tambahkan penilaian siswa</p>
+                    </div>
                 </td>
             </tr>
         `;
         return;
     }
-
-    // Sort data by weekNumber first, then by className
-    const sortedData = data.sort((a, b) => {
-        if (a.weekNumber !== b.weekNumber) {
-            return a.weekNumber - b.weekNumber;
-        }
-        return a.className.localeCompare(b.className);
-    });
-
-    // Group assessments by week only for better organization
-    const groupedByWeek = sortedData.reduce((acc, assessment) => {
-        const weekKey = assessment.weekNumber || 1;
-        if (!acc[weekKey]) {
-            acc[weekKey] = {
-                weekNumber: weekKey,
-                assessments: []
-            };
-        }
-        acc[weekKey].assessments.push(assessment);
-        return acc;
-    }, {});
-
+    
+    // Group and sort data by class level (3, 4, 5)
+    const groupedData = groupAssessmentsByClass(data);
     let tableHTML = '';
     
-    // Sort weeks numerically
-    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => parseInt(a) - parseInt(b));
-    
-    sortedWeeks.forEach(weekKey => {
-        const group = groupedByWeek[weekKey];
-        
-        // Add week header
-        tableHTML += `
-            <tr class="bg-blue-50">
-                <td colspan="11" class="px-6 py-3 text-left font-semibold text-blue-800">
-                    Minggu ${group.weekNumber}
-                </td>
-            </tr>
-        `;
-        
-        group.assessments.forEach((assessment, index) => {
-            // Format detailed scores for each meeting
-            const meeting1Scores = `${assessment.meeting1_kehadiran}-${assessment.meeting1_membaca}-${assessment.meeting1_kosakata}-${assessment.meeting1_pengucapan}-${assessment.meeting1_speaking} (${assessment.meeting1_total})`;
-            const meeting2Scores = `${assessment.meeting2_kehadiran}-${assessment.meeting2_membaca}-${assessment.meeting2_kosakata}-${assessment.meeting2_pengucapan}-${assessment.meeting2_speaking} (${assessment.meeting2_total})`;
-            const meeting3Scores = `${assessment.meeting3_kehadiran}-${assessment.meeting3_membaca}-${assessment.meeting3_kosakata}-${assessment.meeting3_pengucapan}-${assessment.meeting3_speaking} (${assessment.meeting3_total})`;
+    // Process each class group in order
+    Object.keys(groupedData)
+        .sort((a, b) => (CLASS_GROUPS[a]?.priority || 99) - (CLASS_GROUPS[b]?.priority || 99))
+        .forEach(classLevel => {
+            const group = groupedData[classLevel];
+            const classConfig = CLASS_GROUPS[classLevel] || {
+                name: `Kelas ${classLevel}`,
+                color: 'bg-gray-50 border-l-4 border-gray-400',
+                headerColor: 'bg-gray-100 text-gray-800',
+            };
             
-            // Determine category color
-            let categoryColor = 'text-gray-600';
-            switch (assessment.category) {
-                case 'Sangat Baik':
-                    categoryColor = 'text-green-600 font-semibold';
-                    break;
-                case 'Baik':
-                    categoryColor = 'text-blue-600 font-semibold';
-                    break;
-                case 'Cukup':
-                    categoryColor = 'text-yellow-600 font-semibold';
-                    break;
-                case 'Kurang':
-                    categoryColor = 'text-orange-600 font-semibold';
-                    break;
-                case 'Sangat Kurang':
-                    categoryColor = 'text-red-600 font-semibold';
-                    break;
-            }
+            const totalStudents = group.assessments.length;
+            const averageAttendance = calculateGroupAverageAttendance(group.assessments);
             
-            // <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">Minggu ${assessment.weekNumber || 1}</td>
             tableHTML += `
-                <tr class="hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.studentName}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.className}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.teacherName}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting1Scores}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting2Scores}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">${meeting3Scores}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.total_weekly}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.average}</td>
-                    <td class="px-4 py-4 whitespace-nowrap">${categoryBadge(assessment.category)}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                        <button onclick="editAssessment(${assessment.id})" 
-                                class="text-indigo-600 hover:text-indigo-900 mr-3">
-                            Edit
-                        </button>
-                        <button onclick="deleteAssessment(${assessment.id})" 
-                                class="text-red-600 hover:text-red-900">
-                            Hapus
-                        </button>
+                <tr class="${classConfig.color}">
+                    <td colspan="13" class="px-6 py-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-bold ${classConfig.headerColor.split(' ')[1]} mb-1">
+                                    ${classConfig.name}
+                                </h3>
+                                <p class="text-sm text-gray-600">
+                                    ${totalStudents} siswa • 3 pertemuan/minggu
+                                    • Rata-rata kehadiran: ${averageAttendance}%
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="px-3 py-1 text-xs font-medium ${classConfig.headerColor} rounded-full">
+                                    ${totalStudents} Penilaian
+                                </span>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             `;
+            
+            // Add individual assessment rows for this class
+            group.assessments.forEach((assessment, index) => {
+                tableHTML += createAssessmentRow(assessment, index, classConfig);
+            });
+            
+            // Add spacing between class groups
+            tableHTML += `
+                <tr class="bg-gray-50">
+                    <td colspan="13" class="py-2"></td>
+                </tr>
+            `;
         });
-    });
     
     tbody.innerHTML = tableHTML;
 }
 
-// Get category badge HTML
+// Group assessments by class level
+function groupAssessmentsByClass(data) {
+    const grouped = {};
+    
+    data.forEach(assessment => {
+        // Extract class level from className (assumes format like "3A", "4B", "5C", etc.)
+        const classLevel = assessment.className ? assessment.className.charAt(0) : 'Other';
+        
+        if (!grouped[classLevel]) {
+            grouped[classLevel] = {
+                classLevel,
+                assessments: []
+            };
+        }
+        
+        grouped[classLevel].assessments.push(assessment);
+    });
+    
+    // Sort assessments within each group by week number and student name
+    Object.values(grouped).forEach(group => {
+        group.assessments.sort((a, b) => {
+            if (a.weekNumber !== b.weekNumber) {
+                return a.weekNumber - b.weekNumber;
+            }
+            return a.studentName.localeCompare(b.studentName);
+        });
+    });
+    
+    return grouped;
+}
+
+// Calculate group average attendance
+function calculateGroupAverageAttendance(assessments) {
+    if (assessments.length === 0) return '0.0';
+    
+    const totalPercentage = assessments.reduce((sum, assessment) => {
+        return sum + parseFloat(calculateAttendancePercentage(assessment));
+    }, 0);
+    
+    return (totalPercentage / assessments.length).toFixed(1);
+}
+
+// Calculate average score for a group
+function calculateGroupAverage(assessments) {
+    if (assessments.length === 0) return '0.0';
+    
+    const totalAverage = assessments.reduce((sum, assessment) => {
+        return sum + (parseFloat(assessment.average) || 0);
+    }, 0);
+    
+    return (totalAverage / assessments.length).toFixed(1);
+}
+
+// Create individual assessment row
+function createAssessmentRow(assessment, index, classConfig) {
+    const classLevel = assessment.className ? assessment.className.charAt(0) : '3';
+    const isClass5 = classLevel === '5';
+    const attendancePercentage = calculateAttendancePercentage(assessment);
+    
+    const meeting1Scores = `${assessment.meeting1_kehadiran}-${assessment.meeting1_membaca}-${assessment.meeting1_kosakata}-${assessment.meeting1_pengucapan}-${assessment.meeting1_speaking} (${assessment.meeting1_total})`;
+    const meeting2Scores = `${assessment.meeting2_kehadiran}-${assessment.meeting2_membaca}-${assessment.meeting2_kosakata}-${assessment.meeting2_pengucapan}-${assessment.meeting2_speaking} (${assessment.meeting2_total})`;
+    const meeting3Scores = isClass5 ? 
+        '<span class="text-gray-400 text-xs">Tidak tersedia</span>' : 
+        `${assessment.meeting3_kehadiran}-${assessment.meeting3_membaca}-${assessment.meeting3_kosakata}-${assessment.meeting3_pengucapan}-${assessment.meeting3_speaking} (${assessment.meeting3_total})`;
+    
+    return `
+        <tr class="hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-l-4 ${classConfig.color.split(' ').pop()}">
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">${assessment.studentName}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    Minggu ${assessment.weekNumber || 1}
+                </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.className}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${assessment.teacherName}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600 font-mono bg-gray-50">${meeting1Scores}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600 font-mono bg-gray-50">${meeting2Scores}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600 font-mono bg-gray-50 ${isClass5 ? 'bg-gray-100' : ''}">${meeting3Scores}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">${assessment.total_weekly}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-blue-600">${assessment.average}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold ${attendancePercentage >= 80 ? 'text-green-600' : attendancePercentage >= 60 ? 'text-yellow-600' : 'text-red-600'}">
+                <div class="flex items-center gap-1">
+                    <span>${attendancePercentage}%</span>
+                    ${attendancePercentage >= 80 ? 
+                        '<svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' : 
+                        attendancePercentage >= 60 ? 
+                        '<svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>' :
+                        '<svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>'
+                    }
+                </div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">${categoryBadge(assessment.category)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                <div class="flex gap-2">
+                    <button onclick="editAssessment(${assessment.id})" class="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors">
+                        Edit
+                    </button>
+                    <button onclick="deleteAssessment(${assessment.id})" class="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors">
+                        Hapus
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+// Get category badge HTML (enhanced)
 function categoryBadge(category) {
     const badges = {
-        'Sangat Baik': 'bg-green-100 text-green-800',
-        'Baik': 'bg-blue-100 text-blue-800',
-        'Cukup': 'bg-yellow-100 text-yellow-800',
-        'Kurang': 'bg-orange-100 text-orange-800',
-        'Sangat Kurang': 'bg-red-100 text-red-800'
+        'Sangat Baik': 'bg-green-100 text-green-800 border border-green-200',
+        'Baik': 'bg-blue-100 text-blue-800 border border-blue-200',
+        'Cukup': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+        'Kurang': 'bg-orange-100 text-orange-800 border border-orange-200',
+        'Sangat Kurang': 'bg-red-100 text-red-800 border border-red-200'
     };
     
-    const badgeClass = badges[category] || 'bg-gray-100 text-gray-800';
-    return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${category}</span>`;
+    const badgeClass = badges[category] || 'bg-gray-100 text-gray-800 border border-gray-200';
+    
+    return `
+        <span class="px-2 py-1 text-xs leading-4 font-semibold rounded-full ${badgeClass}">
+            ${category}
+        </span>
+    `;
 }
 
 // Update pagination
@@ -320,7 +535,7 @@ function updatePagination(pagination) {
     document.getElementById('nextBtn').disabled = !hasNext;
 }
 
-// Get form data
+// Get form data (modified to handle class 5 logic)
 function getFormData() {
     const studentName = document.getElementById('studentName').value;
     const className = document.getElementById('className').value;
@@ -328,11 +543,14 @@ function getFormData() {
     const teacherId = parseInt(document.getElementById('teacherId').value);
     const progressNotes = document.getElementById('progressNotes').value;
     
-    // Debug log to check values
-    console.log('Form data:', { studentName, className, weekNumber, teacherId });
+    const isClass5 = className && className.startsWith('5');
+    const meetingCount = isClass5 ? 2 : 3;
     
     const pertemuan = [];
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 3; i++) { // Always process 3 meetings, but only include in data if needed
+        // For class 5, skip meeting 3
+        if (isClass5 && i === 3) continue;
+        
         const scores = {
             kehadiran: parseInt(document.getElementById(`meeting${i}_kehadiran`).value) || 0,
             membaca: parseInt(document.getElementById(`meeting${i}_membaca`).value) || 0,
@@ -341,25 +559,32 @@ function getFormData() {
             speaking: parseInt(document.getElementById(`meeting${i}_speaking`).value) || 0
         };
         
-        pertemuan.push({
-            meeting: i,
-            scores
-        });
+        // Only push if it's not class 5 or if it's meeting 1 or 2
+        if (!isClass5 || i <= 2) {
+            pertemuan.push({ meeting: i, scores });
+        }
     }
     
-    return {
-        studentName,
-        className,
-        weekNumber,
-        teacherId,
-        pertemuan,
-        progressNotes
+    return { 
+        studentName, 
+        className, 
+        weekNumber, 
+        teacherId, 
+        pertemuan, 
+        progress_notes: progressNotes 
     };
 }
 
 // Form submission handler
 async function handleFormSubmit(e) {
     e.preventDefault();
+    
+    const className = document.getElementById('className').value;
+    const isClass5 = className && className.startsWith('5');
+    
+    if (!validateForm(isClass5)) {
+        return;
+    }
     
     try {
         const formData = getFormData();
@@ -369,14 +594,14 @@ async function handleFormSubmit(e) {
                 method: 'PUT',
                 body: JSON.stringify(formData)
             });
-            showToast('Penilaian berhasil diperbarui');
+            showToast(`Penilaian berhasil diperbarui`);
             closeEditModal();
         } else {
             await apiCall('/assessments', {
                 method: 'POST',
                 body: JSON.stringify(formData)
             });
-            showToast('Penilaian berhasil disimpan');
+            showToast(`Penilaian berhasil disimpan`);
         }
         
         resetForm();
@@ -398,54 +623,59 @@ function changePage(page) {
     loadAssessments(page, currentSearch);
 }
 
-// Edit assessment
+// Edit assessment (modified to handle class 5 logic)
 async function editAssessment(id) {
     try {
         const response = await apiCall(`/assessments/${id}`);
         const assessment = response.data;
-        
         editingId = id;
         
-        // Populate form with existing data
-        document.getElementById('editStudentName').value = assessment.studentName;
-        document.getElementById('editClassName').value = assessment.className;
+        // Check if it's class 5 and hide meeting 3 inputs
+        const isClass5 = assessment.className && assessment.className.startsWith('5');
+        
+        // Load teachers and set the selected teacher
+        await loadTeachersForEdit(assessment.teacherId);
+        
+        // Populate form fields
+        document.getElementById('editStudentName').value = assessment.studentName || '';
+        document.getElementById('editClassName').value = assessment.className || '';
         document.getElementById('editWeekNumber').value = assessment.weekNumber || 1;
-        document.getElementById('editTeacherId').value = assessment.teacherId;
-        document.getElementById('editProgressNotes').value = assessment.progress_notes || '';
         
-        // Populate all meeting scores for dropdowns
-        // Meeting 1
-        document.getElementById('editMeeting1_kehadiran').value = assessment.meeting1_kehadiran;
-        document.getElementById('editMeeting1_membaca').value = assessment.meeting1_membaca;
-        document.getElementById('editMeeting1_kosakata').value = assessment.meeting1_kosakata;
-        document.getElementById('editMeeting1_pengucapan').value = assessment.meeting1_pengucapan;
-        document.getElementById('editMeeting1_speaking').value = assessment.meeting1_speaking;
+        // Reset all meeting inputs first
+        for (let i = 1; i <= 3; i++) {
+            document.getElementById(`editMeeting${i}_kehadiran`).value = '0';
+            document.getElementById(`editMeeting${i}_membaca`).value = '0';
+            document.getElementById(`editMeeting${i}_kosakata`).value = '0';
+            document.getElementById(`editMeeting${i}_pengucapan`).value = '0';
+            document.getElementById(`editMeeting${i}_speaking`).value = '0';
+        }
         
-        // Meeting 2
-        document.getElementById('editMeeting2_kehadiran').value = assessment.meeting2_kehadiran;
-        document.getElementById('editMeeting2_membaca').value = assessment.meeting2_membaca;
-        document.getElementById('editMeeting2_kosakata').value = assessment.meeting2_kosakata;
-        document.getElementById('editMeeting2_pengucapan').value = assessment.meeting2_pengucapan;
-        document.getElementById('editMeeting2_speaking').value = assessment.meeting2_speaking;
+        // Populate meeting scores
+        if (assessment.pertemuan && Array.isArray(assessment.pertemuan)) {
+            assessment.pertemuan.forEach(meeting => {
+                const meetingNum = meeting.meeting;
+                if (meetingNum >= 1 && meetingNum <= 3) {
+                    document.getElementById(`editMeeting${meetingNum}_kehadiran`).value = meeting.scores?.kehadiran || '0';
+                    document.getElementById(`editMeeting${meetingNum}_membaca`).value = meeting.scores?.membaca || '0';
+                    document.getElementById(`editMeeting${meetingNum}_kosakata`).value = meeting.scores?.kosakata || '0';
+                    document.getElementById(`editMeeting${meetingNum}_pengucapan`).value = meeting.scores?.pengucapan || '0';
+                    document.getElementById(`editMeeting${meetingNum}_speaking`).value = meeting.scores?.speaking || '0';
+                }
+            });
+        }
         
-        // Meeting 3
-        document.getElementById('editMeeting3_kehadiran').value = assessment.meeting3_kehadiran;
-        document.getElementById('editMeeting3_membaca').value = assessment.meeting3_membaca;
-        document.getElementById('editMeeting3_kosakata').value = assessment.meeting3_kosakata;
-        document.getElementById('editMeeting3_pengucapan').value = assessment.meeting3_pengucapan;
-        document.getElementById('editMeeting3_speaking').value = assessment.meeting3_speaking;
+        // Toggle meeting 3 visibility after populating fields
+        toggleMeeting3Inputs(isClass5, 'edit');
         
-        // Load teachers for the edit form
-        await loadTeachersForEdit();
-        document.getElementById('editTeacherId').value = assessment.teacherId;
-        
-        // Show modal
+        // Show the modal
         document.getElementById('editModal').classList.remove('hidden');
         
-        showToast('Mode edit aktif. Semua nilai penilaian telah dimuat.');
+        // Ensure table columns are properly updated
+        toggleMeeting3Column(isClass5);
+        
     } catch (error) {
         console.error('Error loading assessment for edit:', error);
-        showToast('Gagal memuat data untuk edit', 'error');
+        showToast('Gagal memuat data penilaian', 'error');
     }
 }
 
@@ -456,10 +686,7 @@ async function deleteAssessment(id) {
     }
     
     try {
-        await apiCall(`/assessments/${id}`, {
-            method: 'DELETE'
-        });
-        
+        await apiCall(`/assessments/${id}`, { method: 'DELETE' });
         showToast('Penilaian berhasil dihapus');
         loadAssessments();
     } catch (error) {
@@ -472,6 +699,10 @@ function resetForm() {
     assessmentForm.reset();
     editingId = null;
     document.getElementById('submitBtn').textContent = 'Simpan Penilaian';
+    
+    // Reset meeting 3 visibility
+    toggleMeeting3Inputs(false, '');
+    toggleMeeting3Inputs(false, 'edit');
 }
 
 // Close edit modal
@@ -509,89 +740,272 @@ function showToast(message, type = 'success') {
     }
     
     toastElement.classList.remove('hidden');
-    
     setTimeout(() => {
         toastElement.classList.add('hidden');
     }, 3000);
 }
 
-// Handle edit form submission
+// Handle edit form submission (modified to handle class 5 logic)
 async function handleEditFormSubmit(e) {
     e.preventDefault();
     
     if (!editingId) {
-        showToast('Error: No assessment selected for editing', 'error');
+        showToast('Tidak ada data yang dipilih untuk diedit', 'error');
         return;
     }
     
     try {
         showLoading(true);
         
-        // Collect form data from edit modal
+        // Get form values
+        const studentName = document.getElementById('editStudentName')?.value.trim();
+        const className = document.getElementById('editClassName')?.value;
+        const weekNumber = parseInt(document.getElementById('editWeekNumber')?.value);
+        const teacherId = document.getElementById('editTeacherId')?.value;
+        const progressNotes = document.getElementById('editProgressNotes')?.value;
+        const isClass5 = className && className.startsWith('5');
+        
+        // Manual validation
+        if (!studentName) {
+            showToast('Nama siswa harus diisi', 'error');
+            showLoading(false);
+            return;
+        }
+        
+        if (!className) {
+            showToast('Kelas harus dipilih', 'error');
+            showLoading(false);
+            return;
+        }
+        
+        if (!weekNumber || isNaN(weekNumber) || weekNumber < 1) {
+            showToast('Minggu ke harus diisi dengan angka lebih dari 0', 'error');
+            showLoading(false);
+            return;
+        }
+        
+        if (!teacherId) {
+            showToast('Guru harus dipilih', 'error');
+            showLoading(false);
+            return;
+        }
+        
+        // Prepare form data
         const formData = {
-            studentName: document.getElementById('editStudentName').value,
-            className: document.getElementById('editClassName').value,
-            weekNumber: parseInt(document.getElementById('editWeekNumber').value),
-            teacherId: parseInt(document.getElementById('editTeacherId').value),
-            progressNotes: document.getElementById('editProgressNotes').value,
-            pertemuan: [
-                {
-                    meeting: 1,
-                    scores: {
-                        kehadiran: parseInt(document.getElementById('editMeeting1_kehadiran').value) || 0,
-                        membaca: parseInt(document.getElementById('editMeeting1_membaca').value) || 0,
-                        kosakata: parseInt(document.getElementById('editMeeting1_kosakata').value) || 0,
-                        pengucapan: parseInt(document.getElementById('editMeeting1_pengucapan').value) || 0,
-                        speaking: parseInt(document.getElementById('editMeeting1_speaking').value) || 0
-                    }
-                },
-                {
-                    meeting: 2,
-                    scores: {
-                        kehadiran: parseInt(document.getElementById('editMeeting2_kehadiran').value) || 0,
-                        membaca: parseInt(document.getElementById('editMeeting2_membaca').value) || 0,
-                        kosakata: parseInt(document.getElementById('editMeeting2_kosakata').value) || 0,
-                        pengucapan: parseInt(document.getElementById('editMeeting2_pengucapan').value) || 0,
-                        speaking: parseInt(document.getElementById('editMeeting2_speaking').value) || 0
-                    }
-                },
-                {
-                    meeting: 3,
-                    scores: {
-                        kehadiran: parseInt(document.getElementById('editMeeting3_kehadiran').value) || 0,
-                        membaca: parseInt(document.getElementById('editMeeting3_membaca').value) || 0,
-                        kosakata: parseInt(document.getElementById('editMeeting3_kosakata').value) || 0,
-                        pengucapan: parseInt(document.getElementById('editMeeting3_pengucapan').value) || 0,
-                        speaking: parseInt(document.getElementById('editMeeting3_speaking').value) || 0
-                    }
-                }
-            ]
+            studentName,
+            className,
+            weekNumber,
+            teacherId: parseInt(teacherId),
+            progress_notes: progressNotes,
+            pertemuan: []
         };
         
-        // Debug logging
-        console.log('Edit form data:', formData);
-        console.log('Editing ID:', editingId);
+        // Process meetings - always include all 3 meetings
+        for (let i = 1; i <= 3; i++) {
+            const scores = {
+                kehadiran: parseInt(document.getElementById(`editMeeting${i}_kehadiran`)?.value) || 0,
+                membaca: parseInt(document.getElementById(`editMeeting${i}_membaca`)?.value) || 0,
+                kosakata: parseInt(document.getElementById(`editMeeting${i}_kosakata`)?.value) || 0,
+                pengucapan: parseInt(document.getElementById(`editMeeting${i}_pengucapan`)?.value) || 0,
+                speaking: parseInt(document.getElementById(`editMeeting${i}_speaking`)?.value) || 0
+            };
+            
+            // For class 5, meeting 3 scores should be 0
+            if (isClass5 && i === 3) {
+                scores.kehadiran = 0;
+                scores.membaca = 0;
+                scores.kosakata = 0;
+                scores.pengucapan = 0;
+                scores.speaking = 0;
+            }
+            
+            formData.pertemuan.push({
+                meeting: i,
+                scores: scores
+            });
+        }
         
-        // Submit update
-        const response = await apiCall(`/assessments/${editingId}`, {
+        // Send the update request
+        await apiCall(`/assessments/${editingId}`, {
             method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(formData)
         });
         
-        console.log('Update response:', response);
-        
-        showToast('Penilaian berhasil diperbarui!', 'success');
+        showToast('Penilaian berhasil diperbarui', 'success');
         closeEditModal();
         loadAssessments();
         
     } catch (error) {
         console.error('Error updating assessment:', error);
-        showToast('Gagal memperbarui penilaian: ' + error.message, 'error');
+        showToast('Gagal memperbarui penilaian: ' + (error.message || 'Terjadi kesalahan'), 'error');
     } finally {
         showLoading(false);
+    }
+}
+
+// Setup class filters (enhanced for class-specific features)
+function setupClassFilters() {
+    // Add filter buttons for each class if they don't exist
+    const filterContainer = document.getElementById('classFilters');
+    if (!filterContainer) return;
+    
+    const classLevels = ['3', '4', '5'];
+    filterContainer.innerHTML = `
+        <div class="flex flex-wrap gap-2 mb-4">
+            <button onclick="filterByClass('all')" class="filter-btn active px-4 py-2 text-sm font-medium rounded-lg border-2 border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                Semua Kelas
+            </button>
+            ${classLevels.map(level => {
+                const config = CLASS_GROUPS[level];
+                return `
+                    <button onclick="filterByClass('${level}')" class="filter-btn px-4 py-2 text-sm font-medium rounded-lg border-2 ${config.color} hover:opacity-80 transition-colors">
+                        ${config.name} (${config.meetings} pertemuan)
+                    </button>
+                `;
+            }).join('')}
+        </div>
+        <div class="text-sm text-gray-600 mb-4">
+            <span class="font-medium">Keterangan:</span>
+            <span class="ml-2">Kelas 3 & 4: 3 pertemuan/minggu (max 75)</span>
+            <span class="mx-2">•</span>
+            <span>Kelas 5: 2 pertemuan/minggu (max 50)</span>
+            <span class="mx-2">•</span>
+            <span>Persentase kehadiran untuk perbandingan yang setara</span>
+        </div>
+    `;
+}
+
+// Filter assessments by class level
+function filterByClass(classLevel) {
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-500', 'text-white');
+        btn.classList.add('bg-white', 'text-gray-700');
+    });
+    
+    event.target.classList.remove('bg-white', 'text-gray-700');
+    event.target.classList.add('active', 'bg-blue-500', 'text-white');
+    
+    // Filter data
+    if (classLevel === 'all') {
+        displayAssessments(assessments);
+    } else {
+        const filtered = assessments.filter(assessment => 
+            assessment.className && assessment.className.startsWith(classLevel)
+        );
+        displayAssessments(filtered);
+    }
+}
+
+// Enhanced validation for form inputs
+function validateForm(isClass5 = false, prefix = '') {
+    // For edit form, we need to add 'edit' prefix to the element IDs
+    const idPrefix = prefix === 'edit' ? 'edit' : '';
+    
+    const studentName = document.getElementById(`${idPrefix}studentName`)?.value.trim();
+    const className = document.getElementById(`${idPrefix}className`)?.value;
+    const weekNumber = document.getElementById(`${idPrefix}weekNumber`)?.value;
+    const teacherId = document.getElementById(`${idPrefix}teacherId`)?.value;
+    
+    if (!studentName) {
+        showToast('Nama siswa harus diisi', 'error');
+        return false;
+    }
+    
+    if (!className) {
+        showToast('Kelas harus dipilih', 'error');
+        return false;
+    }
+    
+    if (!weekNumber || isNaN(weekNumber) || weekNumber < 1) {
+        showToast('Minggu ke harus diisi dengan angka lebih dari 0', 'error');
+        return false;
+    }
+    
+    if (!teacherId) {
+        showToast('Guru harus dipilih', 'error');
+        return false;
+    }
+    
+    // Validate meeting scores
+    const maxMeetings = isClass5 ? 2 : 3;
+    
+    for (let i = 1; i <= maxMeetings; i++) {
+        const kehadiran = parseInt(document.getElementById(`${idPrefix}Meeting${i}_kehadiran`)?.value) || 0;
+        const membaca = parseInt(document.getElementById(`${idPrefix}Meeting${i}_membaca`)?.value) || 0;
+        const kosakata = parseInt(document.getElementById(`${idPrefix}Meeting${i}_kosakata`)?.value) || 0;
+        const pengucapan = parseInt(document.getElementById(`${idPrefix}Meeting${i}_pengucapan`)?.value) || 0;
+        const speaking = parseInt(document.getElementById(`${idPrefix}Meeting${i}_speaking`)?.value) || 0;
+        
+        if (kehadiran < 0 || kehadiran > 5) {
+            showToast(`Pertemuan ${i}: Nilai kehadiran harus 0-5`, 'error');
+            return false;
+        }
+        
+        if (membaca < 0 || membaca > 5) {
+            showToast(`Pertemuan ${i}: Nilai membaca harus 0-5`, 'error');
+            return false;
+        }
+        
+        if (kosakata < 0 || kosakata > 5) {
+            showToast(`Pertemuan ${i}: Nilai kosakata harus 0-5`, 'error');
+            return false;
+        }
+        
+        if (pengucapan < 0 || pengucapan > 5) {
+            showToast(`Pertemuan ${i}: Nilai pengucapan harus 0-5`, 'error');
+            return false;
+        }
+        
+        if (speaking < 0 || speaking > 5) {
+            showToast(`Pertemuan ${i}: Nilai speaking harus 0-5`, 'error');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Enhanced form submit with validation
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    const className = document.getElementById('className').value;
+    const isClass5 = className && className.startsWith('5');
+    
+    if (!validateForm(isClass5)) {
+        return;
+    }
+    
+    try {
+        const formData = getFormData();
+        
+        if (editingId) {
+            await apiCall(`/assessments/${editingId}`, {
+                method: 'PUT',
+                body: JSON.stringify(formData)
+            });
+            showToast(`Penilaian berhasil diperbarui`);
+            closeEditModal();
+        } else {
+            await apiCall('/assessments', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            showToast(`Penilaian berhasil disimpan`);
+        }
+        
+        resetForm();
+        loadAssessments();
+    } catch (error) {
+        console.error('Error submitting form:', error);
     }
 }
 
 // Make functions globally available
 window.editAssessment = editAssessment;
 window.deleteAssessment = deleteAssessment;
+window.filterByClass = filterByClass;
