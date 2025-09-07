@@ -27,7 +27,46 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAllData();
     
     // Event listeners
-    refreshBtn.addEventListener('click', loadAllData);
+    refreshBtn.addEventListener('click', function() {
+        // Add loading animation to refresh button
+        const refreshIcon = document.getElementById('refreshIcon');
+        const refreshSpinner = document.getElementById('refreshSpinner');
+        const refreshText = document.getElementById('refreshText');
+        
+        // Show loading state
+        refreshIcon.classList.add('hidden');
+        refreshSpinner.classList.remove('hidden');
+        refreshText.textContent = '🔄 Refreshing...';
+        refreshBtn.disabled = true;
+        refreshBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        
+        // Add pulse animation to statistics cards
+        const statCards = document.querySelectorAll('[id$="Count"]').forEach(card => {
+            card.parentElement.parentElement.classList.add('animate__animated', 'animate__pulse');
+        });
+        
+        loadAllData().finally(() => {
+            // Reset button state after loading
+            setTimeout(() => {
+                refreshIcon.classList.remove('hidden');
+                refreshSpinner.classList.add('hidden');
+                refreshText.textContent = '🔄 Refresh Data';
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                
+                // Remove pulse animation
+                document.querySelectorAll('[id$="Count"]').forEach(card => {
+                    card.parentElement.parentElement.classList.remove('animate__animated', 'animate__pulse');
+                });
+                
+                // Add success animation
+                refreshBtn.classList.add('animate__animated', 'animate__bounce');
+                setTimeout(() => {
+                    refreshBtn.classList.remove('animate__animated', 'animate__bounce');
+                }, 1000);
+            }, 500);
+        });
+    });
 });
 
 // Load all database data
@@ -102,88 +141,85 @@ function displayTeachers(teachers) {
         return;
     }
 
-    teachersTableBody.innerHTML = teachers.map(teacher => `
-        <tr class="hover:bg-gray-50" data-teacher-id="${teacher.id}">
+    teachersTableBody.innerHTML = teachers.map((teacher, index) => `
+        <tr class="hover:bg-gray-50 transition-colors duration-200 animate__animated animate__fadeInUp" 
+            data-teacher-id="${teacher.id}" 
+            style="animation-delay: ${index * 0.1}s">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${teacher.id}</td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
                     <input type="text" 
                            value="${teacher.name}" 
-                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 teacher-name-input"
-                           data-original-name="${teacher.name}"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 teacher-name-input transition-all duration-200 hover:bg-gray-50"
                            data-teacher-id="${teacher.id}">
-                    <button class="save-teacher-btn p-1.5 text-gray-400 hover:text-blue-600 hover:border-blue-600 focus:outline-none border border-gray-300 rounded-md" 
-                            title="Simpan perubahan"
+                    <button class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded text-xs hover:from-blue-600 hover:to-blue-700 transition-all duration-200 hover:scale-105 hover:shadow-md save-teacher-btn"
                             data-teacher-id="${teacher.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+                        💾 Save
                     </button>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${teacher.assessmentCount || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    📊 ${teacher._count?.assessments || 0} penilaian
+                </span>
+            </td>
         </tr>
     `).join('');
 
-    // Event listeners are handled by the global document click listener
-
-    // Add input event to show/hide save button
-    document.querySelectorAll('.teacher-name-input').forEach(input => {
-        input.addEventListener('input', function() {
-            const saveBtn = this.nextElementSibling;
-            const originalName = this.dataset.originalName;
-            saveBtn.classList.toggle('text-blue-600', this.value !== originalName);
-            saveBtn.disabled = this.value === originalName;
+    // Add event listeners for save buttons
+    document.querySelectorAll('.save-teacher-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const teacherId = this.getAttribute('data-teacher-id');
+            const input = document.querySelector(`input[data-teacher-id="${teacherId}"]`);
+            const newName = input.value.trim();
+            
+            if (!newName) {
+                showNotification('Nama guru tidak boleh kosong!', 'error');
+                return;
+            }
+            
+            // Add loading state to button
+            const originalText = this.innerHTML;
+            this.innerHTML = '⏳ Saving...';
+            this.disabled = true;
+            this.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+                
+                const result = await response.json();
+                console.log('Teacher update response:', result);
+                
+                if (result.success) {
+                    showNotification('Nama guru berhasil diperbarui!', 'success');
+                    // Add success animation to row
+                    this.closest('tr').classList.add('animate__animated', 'animate__pulse');
+                    setTimeout(() => {
+                        this.closest('tr').classList.remove('animate__animated', 'animate__pulse');
+                    }, 1000);
+                } else {
+                    showNotification(result.message || 'Gagal memperbarui nama guru', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating teacher:', error);
+                showNotification('Terjadi kesalahan saat memperbarui nama guru', 'error');
+            } finally {
+                // Reset button state
+                this.innerHTML = originalText;
+                this.disabled = false;
+                this.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
         });
     });
 }
 
 document.addEventListener('click', async function(e) {
-    if (e.target.closest('.save-teacher-btn')) {
-        const button = e.target.closest('.save-teacher-btn');
-        const teacherId = button.getAttribute('data-teacher-id');
-        const input = document.querySelector(`input[data-teacher-id="${teacherId}"]`);
-        const newName = input.value.trim();
-        
-        if (!newName) {
-            alert('Nama guru tidak boleh kosong');
-            return;
-        }
-        
-        try {
-            console.log('Updating teacher:', { teacherId, newName, url: `${API_BASE_URL}/teachers/${teacherId}` });
-            const response = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name: newName })
-            });
-            
-            console.log('Response status:', response.status);
-            const responseData = await response.json();
-            console.log('Response data:', responseData);
-            
-            if (response.ok) {
-                // Update the original value
-                input.setAttribute('data-original-name', newName);
-                // Show success notification
-                showNotification('Nama guru berhasil diperbarui', 'success');
-                // Show visual feedback on button
-                button.style.color = '#10b981';
-                setTimeout(() => {
-                    button.style.color = '';
-                }, 2000);
-            } else {
-                throw new Error('Failed to update teacher name');
-            }
-        } catch (error) {
-            console.error('Error updating teacher name:', error);
-            showNotification('Gagal mengupdate nama guru', 'error');
-            // Reset to original value
-            input.value = input.getAttribute('data-original-name');
-        }
-    }
     
     // Handle created date save button
     if (e.target.closest('.save-created-date-btn')) {
@@ -287,13 +323,14 @@ function displayAssessments(assessments) {
         return;
     }
 
-    assessmentsTableBody.innerHTML = assessments.map(assessment => {
+    assessmentsTableBody.innerHTML = assessments.map((assessment, index) => {
         const categoryColor = getCategoryColor(assessment.category);
         const createdAt = new Date(assessment.createdAt).toLocaleDateString('id-ID');
         const updatedAt = new Date(assessment.updatedAt).toLocaleDateString('id-ID');
         
         return `
-            <tr class="hover:bg-gray-50">
+            <tr class="hover:bg-gray-50 transition-colors duration-200 animate__animated animate__fadeInUp" 
+                style="animation-delay: ${index * 0.05}s">
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.id}</td>
                 <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${assessment.studentName}</td>
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-600">${assessment.className}</td>
