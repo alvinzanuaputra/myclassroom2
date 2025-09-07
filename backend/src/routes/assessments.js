@@ -135,19 +135,17 @@ router.post('/', async (req, res) => {
     // Validasi dan hitung skor per pertemuan
     const meetingTotals = [];
     const meetingScores = {};
-    const isClass5 = className.startsWith('5');
-    const expectedMeetings = isClass5 ? 2 : 3;
     
-    // Validate we have the correct number of meetings
-    if (pertemuan.length !== expectedMeetings) {
-      console.error(`Validation failed - Expected ${expectedMeetings} meetings for class ${className}, got ${pertemuan.length}`);
+    // Validate we have 3 meetings
+    if (pertemuan.length !== 3) {
+      console.error(`Validation failed - Expected 3 meetings, got ${pertemuan.length}`);
       return res.status(400).json({
         success: false,
-        message: `Kelas ${className} membutuhkan ${expectedMeetings} pertemuan`
+        message: 'Data pertemuan harus berisi 3 pertemuan'
       });
     }
     
-    for (let i = 0; i < expectedMeetings; i++) {
+    for (let i = 0; i < 3; i++) {
       const meeting = pertemuan[i];
       if (!meeting || meeting.meeting !== i + 1) {
         console.error(`Validation failed - Invalid meeting data at index ${i}:`, meeting);
@@ -179,7 +177,7 @@ router.post('/', async (req, res) => {
 
     // Hitung total mingguan dan rata-rata
     const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0);
-    const average = Number((totalWeekly / expectedMeetings).toFixed(2));
+    const average = Number((totalWeekly / 3).toFixed(2));
     const category = calculateCategory(average);
 
     // Validasi weekNumber
@@ -216,7 +214,6 @@ router.post('/', async (req, res) => {
 
     // Simpan ke database
     try {
-      // Prepare data with default values for meeting 3 if it's class 5
       const assessmentData = {
         studentName,
         className,
@@ -228,18 +225,6 @@ router.post('/', async (req, res) => {
         category,
         progress_notes: progressNotes || null
       };
-
-      // If it's class 5, set meeting 3 fields to 0
-      if (isClass5) {
-        const meeting3Fields = [
-          'meeting3_kehadiran', 'meeting3_membaca', 'meeting3_kosakata',
-          'meeting3_pengucapan', 'meeting3_speaking', 'meeting3_total'
-        ];
-        
-        meeting3Fields.forEach(field => {
-          assessmentData[field] = 0;
-        });
-      }
 
       const assessment = await prisma.studentAssessment.create({
         data: assessmentData,
