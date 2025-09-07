@@ -223,12 +223,14 @@ async function loadAssessments(page = 1, search = '') {
     }
 }
 
-// Calculate attendance percentage
+// Calculate attendance percentage with different logic for class levels
 function calculateAttendancePercentage(assessment) {
     if (!assessment || !assessment.className) return '0.0';
     
-    const maxMeetings = 3;
-    const maxPossibleScore = 25 * maxMeetings; // 25 per meeting
+    // Determine if this is class 5 (only 2 meetings) or class 3-4 (3 meetings)
+    const isClass5 = assessment.className === '5A' || assessment.className === '5B';
+    const maxMeetings = isClass5 ? 2 : 3;
+    const maxPossibleScore = 25 * maxMeetings; // 50 for class 5, 75 for class 3-4
     
     let totalScore = 0;
     
@@ -237,7 +239,7 @@ function calculateAttendancePercentage(assessment) {
         totalScore += Math.min(25, Math.max(0, meetingTotal)); // Ensure value is between 0-25
     }
     
-    // Calculate percentage relative to the maximum possible
+    // Calculate percentage relative to the maximum possible for that class type
     const percentage = maxPossibleScore > 0 ? 
         (totalScore / maxPossibleScore) * 100 : 0;
         
@@ -251,7 +253,7 @@ function displayAssessments(data) {
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="13" class="px-4 py-8 text-center text-gray-500">
+                <td colspan="14" class="px-4 py-8 text-center text-gray-500">
                     <div class="flex flex-col items-center">
                         <svg class="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -285,7 +287,7 @@ function displayAssessments(data) {
             
             tableHTML += `
                 <tr class="${classConfig.color}">
-                    <td colspan="13" class="px-6 py-4">
+                    <td colspan="14" class="px-6 py-4">
                         <div class="flex justify-between items-center">
                             <div>
                                 <h3 class="text-lg font-bold ${classConfig.headerColor.split(' ')[1]} mb-1">
@@ -314,7 +316,7 @@ function displayAssessments(data) {
             // Add spacing between class groups
             tableHTML += `
                 <tr class="bg-gray-50">
-                    <td colspan="13" class="py-2"></td>
+                    <td colspan="14" class="py-2"></td>
                 </tr>
             `;
         });
@@ -411,6 +413,15 @@ function createAssessmentRow(assessment, index, classConfig) {
                 </div>
             </td>
             <td class="px-4 py-3 whitespace-nowrap">${categoryBadge(assessment.category)}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                <button onclick="showAssessmentDetail(${assessment.id})" class="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors" title="Lihat detail lengkap">
+                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Detail
+                </button>
+            </td>
             <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
                 <div class="flex gap-2">
                     <button onclick="editAssessment(${assessment.id})" class="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors">
@@ -900,7 +911,71 @@ async function handleFormSubmit(e) {
     }
 }
 
+// Assessment Detail Modal Functions
+async function showAssessmentDetail(id) {
+    try {
+        const response = await apiCall(`/assessments/${id}`);
+        const assessment = response.data;
+        
+        // Populate student info
+        document.getElementById('detailStudentName').textContent = assessment.studentName || '';
+        document.getElementById('detailClassName').textContent = assessment.className || '';
+        document.getElementById('detailWeekNumber').textContent = assessment.weekNumber || '';
+        document.getElementById('detailTeacher').textContent = assessment.teacher?.name || '';
+        
+        // Populate meeting details
+        for (let i = 1; i <= 3; i++) {
+            const kehadiran = assessment[`meeting${i}_kehadiran`] || 0;
+            const membaca = assessment[`meeting${i}_membaca`] || 0;
+            const kosakata = assessment[`meeting${i}_kosakata`] || 0;
+            const pengucapan = assessment[`meeting${i}_pengucapan`] || 0;
+            const speaking = assessment[`meeting${i}_speaking`] || 0;
+            
+            document.getElementById(`detailMeeting${i}Kehadiran`).textContent = getScoreLabel(kehadiran);
+            document.getElementById(`detailMeeting${i}Membaca`).textContent = getScoreLabel(membaca);
+            document.getElementById(`detailMeeting${i}Kosakata`).textContent = getScoreLabel(kosakata);
+            document.getElementById(`detailMeeting${i}Pengucapan`).textContent = getScoreLabel(pengucapan);
+            document.getElementById(`detailMeeting${i}Speaking`).textContent = getScoreLabel(speaking);
+        }
+        
+        // Populate summary
+        document.getElementById('detailTotalWeekly').textContent = assessment.total_weekly || '0';
+        document.getElementById('detailAverage').textContent = assessment.average || '0';
+        document.getElementById('detailPercentage').textContent = calculateAttendancePercentage(assessment) + '%';
+        document.getElementById('detailCategory').textContent = assessment.category || '';
+        
+        // Populate progress notes
+        const progressNotes = assessment.progress_notes || 'Tidak ada catatan perkembangan.';
+        document.getElementById('detailProgressNotes').textContent = progressNotes;
+        
+        // Show modal
+        document.getElementById('detailModal').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error loading assessment detail:', error);
+        showToast('Gagal memuat detail penilaian', 'error');
+    }
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').classList.add('hidden');
+}
+
+function getScoreLabel(score) {
+    const labels = {
+        0: 'Belum',
+        1: '1. Sangat Kurang',
+        2: '2. Kurang', 
+        3: '3. Cukup',
+        4: '4. Baik',
+        5: '5. Baik Sekali'
+    };
+    return labels[score] || 'Belum';
+}
+
 // Make functions globally available
 window.editAssessment = editAssessment;
 window.deleteAssessment = deleteAssessment;
 window.filterByClass = filterByClass;
+window.showAssessmentDetail = showAssessmentDetail;
+window.closeDetailModal = closeDetailModal;

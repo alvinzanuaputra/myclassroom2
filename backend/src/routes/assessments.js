@@ -121,7 +121,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('Received assessment data:', JSON.stringify(req.body, null, 2));
-    const { studentName, className, weekNumber, teacherId, pertemuan, progressNotes } = req.body;
+    const { studentName, className, weekNumber, teacherId, pertemuan, progress_notes } = req.body;
 
     // Validasi input dasar
     if (!studentName || !className || !weekNumber || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
@@ -175,9 +175,11 @@ router.post('/', async (req, res) => {
       meetingScores[`meeting${i + 1}_total`] = total;
     }
 
-    // Hitung total mingguan dan rata-rata
+    // Hitung total mingguan dan rata-rata berdasarkan tipe kelas
+    const isClass5 = className === '5A' || className === '5B';
+    const activeMeetings = isClass5 ? 2 : 3;
     const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0);
-    const average = Number((totalWeekly / 3).toFixed(2));
+    const average = Number((totalWeekly / activeMeetings).toFixed(2));
     const category = calculateCategory(average);
 
     // Validasi weekNumber
@@ -223,7 +225,7 @@ router.post('/', async (req, res) => {
         total_weekly: totalWeekly,
         average,
         category,
-        progress_notes: progressNotes || null
+        progress_notes: progress_notes || null
       };
 
       const assessment = await prisma.studentAssessment.create({
@@ -267,7 +269,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { studentName, className, weekNumber, teacherId, pertemuan, progressNotes } = req.body;
+    const { studentName, className, weekNumber, teacherId, pertemuan, progress_notes } = req.body;
 
     // Cek apakah assessment exists
     const existingAssessment = await prisma.studentAssessment.findUnique({
@@ -357,9 +359,11 @@ router.put('/:id', async (req, res) => {
       meetingScores[`meeting${i + 1}_total`] = total;
     }
 
-    // Hitung total mingguan dan rata-rata
+    // Hitung total mingguan dan rata-rata berdasarkan tipe kelas
+    const isClass5 = className === '5A' || className === '5B';
+    const activeMeetings = isClass5 ? 2 : 3;
     const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0);
-    const average = Number((totalWeekly / 3).toFixed(2));
+    const average = Number((totalWeekly / activeMeetings).toFixed(2));
     const category = calculateCategory(average);
 
     // Update database
@@ -374,7 +378,7 @@ router.put('/:id', async (req, res) => {
         total_weekly: totalWeekly,
         average,
         category,
-        progress_notes: progressNotes || null
+        progress_notes: progress_notes || null
       },
       include: {
         teacher: true

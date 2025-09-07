@@ -620,6 +620,9 @@
                                     Kategori</th>
                                 <th
                                     class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Catatan</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Aksi</th>
                             </tr>
                         </thead>
@@ -1040,6 +1043,165 @@
     <div id="loadingSpinner" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
         <div class="flex items-center justify-center min-h-screen">
             <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+    </div>
+
+    <!-- Assessment Detail Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-medium text-gray-900">Detail Penilaian Siswa</h3>
+                        <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4">
+                    <!-- Student Info -->
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-3">Informasi Siswa</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <span class="text-sm text-gray-600">Nama Siswa:</span>
+                                <p id="detailStudentName" class="font-medium"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Kelas:</span>
+                                <p id="detailClassName" class="font-medium"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Minggu Ke:</span>
+                                <p id="detailWeekNumber" class="font-medium"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Guru:</span>
+                                <p id="detailTeacher" class="font-medium"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meeting Details -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-800 mb-3">Detail Pertemuan</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Meeting 1 -->
+                            <div class="border rounded-lg p-4">
+                                <h5 class="font-medium text-blue-600 mb-3">Pertemuan 1</h5>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kehadiran:</span>
+                                        <span id="detailMeeting1Kehadiran" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Membaca:</span>
+                                        <span id="detailMeeting1Membaca" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kosakata:</span>
+                                        <span id="detailMeeting1Kosakata" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Pengucapan:</span>
+                                        <span id="detailMeeting1Pengucapan" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Speaking:</span>
+                                        <span id="detailMeeting1Speaking" class="font-medium"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Meeting 2 -->
+                            <div class="border rounded-lg p-4">
+                                <h5 class="font-medium text-blue-600 mb-3">Pertemuan 2</h5>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kehadiran:</span>
+                                        <span id="detailMeeting2Kehadiran" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Membaca:</span>
+                                        <span id="detailMeeting2Membaca" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kosakata:</span>
+                                        <span id="detailMeeting2Kosakata" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Pengucapan:</span>
+                                        <span id="detailMeeting2Pengucapan" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Speaking:</span>
+                                        <span id="detailMeeting2Speaking" class="font-medium"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Meeting 3 -->
+                            <div class="border rounded-lg p-4">
+                                <h5 class="font-medium text-blue-600 mb-3">Pertemuan 3</h5>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kehadiran:</span>
+                                        <span id="detailMeeting3Kehadiran" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Membaca:</span>
+                                        <span id="detailMeeting3Membaca" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Kosakata:</span>
+                                        <span id="detailMeeting3Kosakata" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Pengucapan:</span>
+                                        <span id="detailMeeting3Pengucapan" class="font-medium"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Speaking:</span>
+                                        <span id="detailMeeting3Speaking" class="font-medium"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-3">Ringkasan Penilaian</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <span class="text-sm text-gray-600">Total Mingguan:</span>
+                                <p id="detailTotalWeekly" class="font-medium text-lg"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Rata-rata:</span>
+                                <p id="detailAverage" class="font-medium text-lg"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Persentase:</span>
+                                <p id="detailPercentage" class="font-medium text-lg"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-600">Kategori:</span>
+                                <p id="detailCategory" class="font-medium text-lg"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Notes -->
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-3">Catatan Perkembangan Umum</h4>
+                        <p id="detailProgressNotes" class="text-gray-700 whitespace-pre-wrap"></p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
