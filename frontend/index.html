@@ -60,6 +60,9 @@
                         classIndicator.style.display = 'block';
                     }
 
+                    // Show overlay notification
+                    showClass5Notification();
+
                     // Set all meeting 3 values to 0
                     const meeting3Inputs = [
                         `${prefix}Meeting3_kehadiran`,
@@ -85,6 +88,18 @@
                     if (classIndicator) {
                         classIndicator.style.display = 'none';
                     }
+                }
+            }
+
+            // Function to show class 5 notification overlay
+            function showClass5Notification() {
+                const overlay = document.getElementById('class5NotificationOverlay');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    // Auto hide after 3 seconds
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                    }, 3000);
                 }
             }
 
@@ -276,9 +291,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Nama Siswa</label>
-                            <input type="text" id="studentName" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
-                        </div>
+                            <input type="text" id="studentName" required placeholder="Masukkan nama siswa" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400">
+                        </div> 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
                             <select id="className" required
@@ -1201,6 +1216,31 @@
                         <p id="detailProgressNotes" class="text-gray-700 whitespace-pre-wrap"></p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class 5 Notification Overlay -->
+    <div id="class5NotificationOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-md">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0">
+                    <svg class="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-medium text-gray-900">Informasi Kelas 5</h3>
+                </div>
+            </div>
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">Khusus untuk kelas 5 tidak ada pertemuan 3</p>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="document.getElementById('class5NotificationOverlay').classList.add('hidden')" 
+                        class="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                    Mengerti
+                </button>
             </div>
         </div>
     </div>

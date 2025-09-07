@@ -110,24 +110,22 @@ function displayTeachers(teachers) {
                     <input type="text" 
                            value="${teacher.name}" 
                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 teacher-name-input"
-                           data-original-name="${teacher.name}">
+                           data-original-name="${teacher.name}"
+                           data-teacher-id="${teacher.id}">
                     <button class="save-teacher-btn p-1.5 text-gray-400 hover:text-blue-600 hover:border-blue-600 focus:outline-none border border-gray-300 rounded-md" 
-                            title="Simpan perubahan">
+                            title="Simpan perubahan"
+                            data-teacher-id="${teacher.id}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                     </button>
                 </div>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-600">${teacher.notes || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${teacher.assessmentCount || 0}</td>
         </tr>
     `).join('');
 
-    // Add event listeners for save buttons
-    document.querySelectorAll('.save-teacher-btn').forEach(btn => {
-        btn.addEventListener('click', handleSaveTeacher);
-    });
+    // Event listeners are handled by the global document click listener
 
     // Add input event to show/hide save button
     document.querySelectorAll('.teacher-name-input').forEach(input => {
@@ -140,57 +138,141 @@ function displayTeachers(teachers) {
     });
 }
 
-// Handle save teacher name
-async function handleSaveTeacher(e) {
-    const btn = e.currentTarget;
-    const input = btn.previousElementSibling;
-    const teacherId = btn.closest('tr').dataset.teacherId;
-    const newName = input.value.trim();
-
-    if (!newName) {
-        showError('Nama guru tidak boleh kosong');
-        return;
-    }
-
-    try {
-        showLoading(true);
-        const response = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: newName })
-        });
-
-        if (!response.ok) {
-            throw new Error('Gagal memperbarui nama guru');
-        }
-
-        // Update the original name in the data attribute
-        input.dataset.originalName = newName;
-        btn.classList.remove('text-blue-600');
-        btn.disabled = true;
+document.addEventListener('click', async function(e) {
+    if (e.target.closest('.save-teacher-btn')) {
+        const button = e.target.closest('.save-teacher-btn');
+        const teacherId = button.getAttribute('data-teacher-id');
+        const input = document.querySelector(`input[data-teacher-id="${teacherId}"]`);
+        const newName = input.value.trim();
         
-        showToast('Nama guru berhasil diperbarui');
-    } catch (error) {
-        console.error('Error updating teacher:', error);
-        showError('Gagal memperbarui nama guru');
-    } finally {
-        showLoading(false);
+        if (!newName) {
+            alert('Nama guru tidak boleh kosong');
+            return;
+        }
+        
+        try {
+            console.log('Updating teacher:', { teacherId, newName, url: `${API_BASE_URL}/teachers/${teacherId}` });
+            const response = await fetch(`${API_BASE_URL}/teachers/${teacherId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: newName })
+            });
+            
+            console.log('Response status:', response.status);
+            const responseData = await response.json();
+            console.log('Response data:', responseData);
+            
+            if (response.ok) {
+                // Update the original value
+                input.setAttribute('data-original-name', newName);
+                // Show success notification
+                showNotification('Nama guru berhasil diperbarui', 'success');
+                // Show visual feedback on button
+                button.style.color = '#10b981';
+                setTimeout(() => {
+                    button.style.color = '';
+                }, 2000);
+            } else {
+                throw new Error('Failed to update teacher name');
+            }
+        } catch (error) {
+            console.error('Error updating teacher name:', error);
+            showNotification('Gagal mengupdate nama guru', 'error');
+            // Reset to original value
+            input.value = input.getAttribute('data-original-name');
+        }
     }
-}
-
-// Show toast notification
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 px-4 py-2 bg-green-500 text-white rounded-md shadow-lg';
-    toast.textContent = message;
-    document.body.appendChild(toast);
     
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
+    // Handle created date save button
+    if (e.target.closest('.save-created-date-btn')) {
+        const button = e.target.closest('.save-created-date-btn');
+        const input = button.parentElement.querySelector('.created-date-input');
+        const assessmentId = input.getAttribute('data-assessment-id');
+        const newDate = input.value;
+        
+        if (!newDate) {
+            alert('Tanggal tidak boleh kosong');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/assessments/${assessmentId}/timestamps`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    createdAt: new Date(newDate).toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                // Update the original value
+                input.setAttribute('data-original-date', new Date(newDate).toISOString());
+                // Show success notification
+                showNotification('Tanggal dibuat berhasil diperbarui', 'success');
+                // Show visual feedback on button
+                button.style.color = '#10b981';
+                setTimeout(() => {
+                    button.style.color = '';
+                }, 2000);
+            } else {
+                throw new Error('Failed to update created date');
+            }
+        } catch (error) {
+            console.error('Error updating created date:', error);
+            showNotification('Gagal mengupdate tanggal dibuat', 'error');
+            // Reset to original value
+            input.value = formatDateTimeForInput(input.getAttribute('data-original-date'));
+        }
+    }
+    
+    // Handle updated date save button
+    if (e.target.closest('.save-updated-date-btn')) {
+        const button = e.target.closest('.save-updated-date-btn');
+        const input = button.parentElement.querySelector('.updated-date-input');
+        const assessmentId = input.getAttribute('data-assessment-id');
+        const newDate = input.value;
+        
+        if (!newDate) {
+            alert('Tanggal tidak boleh kosong');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/assessments/${assessmentId}/timestamps`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    updatedAt: new Date(newDate).toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                // Update the original value
+                input.setAttribute('data-original-date', new Date(newDate).toISOString());
+                // Show success notification
+                showNotification('Tanggal diupdate berhasil diperbarui', 'success');
+                // Show visual feedback on button
+                button.style.color = '#10b981';
+                setTimeout(() => {
+                    button.style.color = '';
+                }, 2000);
+            } else {
+                throw new Error('Failed to update updated date');
+            }
+        } catch (error) {
+            console.error('Error updating updated date:', error);
+            showNotification('Gagal mengupdate tanggal diupdate', 'error');
+            // Reset to original value
+            input.value = formatDateTimeForInput(input.getAttribute('data-original-date'));
+        }
+    }
+});
 
 // Display assessments in table
 function displayAssessments(assessments) {
@@ -239,11 +321,121 @@ function displayAssessments(assessments) {
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${assessment.average}</td>
                 <td class="px-3 py-4 whitespace-nowrap text-sm ${categoryColor}">${assessment.category}</td>
                 <td class="px-3 py-4 text-sm text-gray-600 max-w-xs truncate" title="${assessment.progress_notes || ''}">${assessment.progress_notes || '-'}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${createdAt}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${updatedAt}</td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div class="flex items-center space-x-2">
+                        <input type="datetime-local" 
+                               value="${formatDateTimeForInput(assessment.createdAt)}" 
+                               class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 created-date-input"
+                               data-assessment-id="${assessment.id}"
+                               data-original-date="${assessment.createdAt}">
+                        <button class="save-created-date-btn p-1 text-gray-400 hover:text-blue-600 hover:border-blue-600 focus:outline-none border border-gray-300 rounded-md" 
+                                title="Simpan perubahan tanggal dibuat">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div class="flex items-center space-x-2">
+                        <input type="datetime-local" 
+                               value="${formatDateTimeForInput(assessment.updatedAt)}" 
+                               class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 updated-date-input"
+                               data-assessment-id="${assessment.id}"
+                               data-original-date="${assessment.updatedAt}">
+                        <button class="save-updated-date-btn p-1 text-gray-400 hover:text-blue-600 hover:border-blue-600 focus:outline-none border border-gray-300 rounded-md" 
+                                title="Simpan perubahan tanggal diupdate">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');
+}
+
+// Format date for datetime-local input
+function formatDateTimeForInput(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    // Format to YYYY-MM-DDTHH:MM format required by datetime-local input
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Show overlay notification
+function showNotification(message, type = 'success') {
+    // Remove existing notification if any
+    const existingNotification = document.querySelector('.notification-overlay');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    // Create notification overlay
+    const notification = document.createElement('div');
+    notification.className = 'notification-overlay fixed top-4 right-4 z-50 max-w-sm';
+    
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const icon = type === 'success' ? 
+        `<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>` :
+        `<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>`;
+
+    notification.innerHTML = `
+        <div class="${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 animate-slide-in">
+            <div class="flex-shrink-0">
+                ${icon}
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium">${message}</p>
+            </div>
+            <button class="flex-shrink-0 ml-2 text-white hover:text-gray-200 focus:outline-none" onclick="this.parentElement.parentElement.remove()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    // Add CSS animation styles if not already added
+    if (!document.querySelector('#notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slide-in {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            .animate-slide-in {
+                animation: slide-in 0.3s ease-out;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 4000);
 }
 
 // Get category color class

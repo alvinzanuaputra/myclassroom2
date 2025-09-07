@@ -265,11 +265,50 @@ router.post('/', async (req, res) => {
   }
 });
 
+// PUT /api/assessments/:id/timestamps - Update assessment timestamps
+router.put('/:id/timestamps', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { createdAt, updatedAt } = req.body;
+    
+    const updateData = {};
+    if (createdAt) updateData.createdAt = new Date(createdAt);
+    if (updatedAt) updateData.updatedAt = new Date(updatedAt);
+    
+    const updatedAssessment = await prisma.studentAssessment.update({
+      where: { id: parseInt(id) },
+      data: updateData
+    });
+    
+    res.json({
+      success: true,
+      message: 'Timestamps updated successfully',
+      data: updatedAssessment
+    });
+  } catch (error) {
+    console.error('Error updating timestamps:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update timestamps',
+      error: error.message
+    });
+  }
+});
+
 // PUT /api/assessments/:id - Update penilaian
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { studentName, className, weekNumber, teacherId, pertemuan, progress_notes } = req.body;
+    const {
+      studentName,
+      className,
+      weekNumber,
+      teacherId,
+      meeting1_kehadiran, meeting1_membaca, meeting1_kosakata, meeting1_pengucapan, meeting1_speaking,
+      meeting2_kehadiran, meeting2_membaca, meeting2_kosakata, meeting2_pengucapan, meeting2_speaking,
+      meeting3_kehadiran, meeting3_membaca, meeting3_kosakata, meeting3_pengucapan, meeting3_speaking,
+      progress_notes
+    } = req.body;
 
     // Cek apakah assessment exists
     const existingAssessment = await prisma.studentAssessment.findUnique({
@@ -284,17 +323,10 @@ router.put('/:id', async (req, res) => {
     }
 
     // Validasi input dasar
-    if (!studentName || !className || !weekNumber || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
+    if (!studentName || !className || !weekNumber || !teacherId) {
       return res.status(400).json({
         success: false,
         message: 'Data tidak lengkap. Pastikan semua field terisi dengan benar.'
-      });
-    }
-
-    if (pertemuan.length !== 3) {
-      return res.status(400).json({
-        success: false,
-        message: 'Data pertemuan harus berisi 3 pertemuan'
       });
     }
 
@@ -327,42 +359,15 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Validasi dan hitung skor per pertemuan
-    const meetingTotals = [];
-    const meetingScores = {};
-    
-    for (let i = 0; i < 3; i++) {
-      const meeting = pertemuan[i];
-      if (meeting.meeting !== i + 1) {
-        return res.status(400).json({
-          success: false,
-          message: `Data pertemuan ${i + 1} tidak valid`
-        });
-      }
-
-      if (!validateScores(meeting.scores)) {
-        return res.status(400).json({
-          success: false,
-          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
-        });
-      }
-
-      const total = calculateMeetingTotal(meeting.scores);
-      meetingTotals.push(total);
-      
-      // Store individual scores
-      meetingScores[`meeting${i + 1}_kehadiran`] = meeting.scores.kehadiran;
-      meetingScores[`meeting${i + 1}_membaca`] = meeting.scores.membaca;
-      meetingScores[`meeting${i + 1}_kosakata`] = meeting.scores.kosakata;
-      meetingScores[`meeting${i + 1}_pengucapan`] = meeting.scores.pengucapan;
-      meetingScores[`meeting${i + 1}_speaking`] = meeting.scores.speaking;
-      meetingScores[`meeting${i + 1}_total`] = total;
-    }
+    // Calculate meeting totals from individual scores
+    const meeting1_total = meeting1_kehadiran + meeting1_membaca + meeting1_kosakata + meeting1_pengucapan + meeting1_speaking;
+    const meeting2_total = meeting2_kehadiran + meeting2_membaca + meeting2_kosakata + meeting2_pengucapan + meeting2_speaking;
+    const meeting3_total = meeting3_kehadiran + meeting3_membaca + meeting3_kosakata + meeting3_pengucapan + meeting3_speaking;
 
     // Hitung total mingguan dan rata-rata berdasarkan tipe kelas
     const isClass5 = className === '5A' || className === '5B';
     const activeMeetings = isClass5 ? 2 : 3;
-    const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0);
+    const totalWeekly = meeting1_total + meeting2_total + meeting3_total;
     const average = Number((totalWeekly / activeMeetings).toFixed(2));
     const category = calculateCategory(average);
 
@@ -374,7 +379,24 @@ router.put('/:id', async (req, res) => {
         className,
         weekNumber,
         teacherId: parseInt(teacherId),
-        ...meetingScores,
+        meeting1_kehadiran,
+        meeting1_membaca,
+        meeting1_kosakata,
+        meeting1_pengucapan,
+        meeting1_speaking,
+        meeting1_total,
+        meeting2_kehadiran,
+        meeting2_membaca,
+        meeting2_kosakata,
+        meeting2_pengucapan,
+        meeting2_speaking,
+        meeting2_total,
+        meeting3_kehadiran,
+        meeting3_membaca,
+        meeting3_kosakata,
+        meeting3_pengucapan,
+        meeting3_speaking,
+        meeting3_total,
         total_weekly: totalWeekly,
         average,
         category,

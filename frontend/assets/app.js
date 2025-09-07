@@ -380,10 +380,11 @@ function calculateGroupAverage(assessments) {
 // Create individual assessment row
 function createAssessmentRow(assessment, index, classConfig) {
     const attendancePercentage = calculateAttendancePercentage(assessment);
+    const isClass5 = assessment.className === '5A' || assessment.className === '5B';
     
     const meeting1Scores = `${assessment.meeting1_kehadiran}-${assessment.meeting1_membaca}-${assessment.meeting1_kosakata}-${assessment.meeting1_pengucapan}-${assessment.meeting1_speaking} (${assessment.meeting1_total})`;
     const meeting2Scores = `${assessment.meeting2_kehadiran}-${assessment.meeting2_membaca}-${assessment.meeting2_kosakata}-${assessment.meeting2_pengucapan}-${assessment.meeting2_speaking} (${assessment.meeting2_total})`;
-    const meeting3Scores = `${assessment.meeting3_kehadiran}-${assessment.meeting3_membaca}-${assessment.meeting3_kosakata}-${assessment.meeting3_pengucapan}-${assessment.meeting3_speaking} (${assessment.meeting3_total})`;
+    const meeting3Scores = isClass5 ? 'Tidak Ada Kelas' : `${assessment.meeting3_kehadiran}-${assessment.meeting3_membaca}-${assessment.meeting3_kosakata}-${assessment.meeting3_pengucapan}-${assessment.meeting3_speaking} (${assessment.meeting3_total})`;
     
     return `
         <tr class="hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-l-4 ${classConfig.color.split(' ').pop()}">
@@ -717,24 +718,26 @@ async function handleEditFormSubmit(e) {
             weekNumber,
             teacherId: parseInt(teacherId),
             progress_notes: progressNotes,
-            pertemuan: []
         };
         
-        // Process meetings - always include all 3 meetings
-        for (let i = 1; i <= 3; i++) {
-            const scores = {
-                kehadiran: parseInt(document.getElementById(`editMeeting${i}_kehadiran`)?.value) || 0,
-                membaca: parseInt(document.getElementById(`editMeeting${i}_membaca`)?.value) || 0,
-                kosakata: parseInt(document.getElementById(`editMeeting${i}_kosakata`)?.value) || 0,
-                pengucapan: parseInt(document.getElementById(`editMeeting${i}_pengucapan`)?.value) || 0,
-                speaking: parseInt(document.getElementById(`editMeeting${i}_speaking`)?.value) || 0
-            };
-            
-            formData.pertemuan.push({
-                meeting: i,
-                scores: scores
-            });
-        }
+        // Collect meeting scores in the format expected by backend
+        formData.meeting1_kehadiran = parseInt(document.getElementById('editMeeting1_kehadiran')?.value) || 0;
+        formData.meeting1_membaca = parseInt(document.getElementById('editMeeting1_membaca')?.value) || 0;
+        formData.meeting1_kosakata = parseInt(document.getElementById('editMeeting1_kosakata')?.value) || 0;
+        formData.meeting1_pengucapan = parseInt(document.getElementById('editMeeting1_pengucapan')?.value) || 0;
+        formData.meeting1_speaking = parseInt(document.getElementById('editMeeting1_speaking')?.value) || 0;
+        
+        formData.meeting2_kehadiran = parseInt(document.getElementById('editMeeting2_kehadiran')?.value) || 0;
+        formData.meeting2_membaca = parseInt(document.getElementById('editMeeting2_membaca')?.value) || 0;
+        formData.meeting2_kosakata = parseInt(document.getElementById('editMeeting2_kosakata')?.value) || 0;
+        formData.meeting2_pengucapan = parseInt(document.getElementById('editMeeting2_pengucapan')?.value) || 0;
+        formData.meeting2_speaking = parseInt(document.getElementById('editMeeting2_speaking')?.value) || 0;
+        
+        formData.meeting3_kehadiran = parseInt(document.getElementById('editMeeting3_kehadiran')?.value) || 0;
+        formData.meeting3_membaca = parseInt(document.getElementById('editMeeting3_membaca')?.value) || 0;
+        formData.meeting3_kosakata = parseInt(document.getElementById('editMeeting3_kosakata')?.value) || 0;
+        formData.meeting3_pengucapan = parseInt(document.getElementById('editMeeting3_pengucapan')?.value) || 0;
+        formData.meeting3_speaking = parseInt(document.getElementById('editMeeting3_speaking')?.value) || 0;
         
         // Send the update request
         await apiCall(`/assessments/${editingId}`, {
