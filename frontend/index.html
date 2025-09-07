@@ -137,32 +137,76 @@
 
     <!-- Navigation -->
     <nav class="bg-gradient-to-r from-blue-600 via-primary to-blue-800 text-white shadow-2xl animate__animated animate__fadeInDown">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 sm:h-20">
+                <!-- Logo and Brand -->
                 <div class="flex items-center animate__animated animate__slideInLeft">
-                    <div class="flex-shrink-0 flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                            <span class="text-2xl font-bold text-primary">MC</span>
+                    <div class="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-white rounded-full flex items-center justify-center">
+                            <span class="text-sm sm:text-lg lg:text-2xl font-bold text-primary">MC</span>
                         </div>
-                        <div>
-                            <h1 class="lg:text-3xl text-xl font-bold text-white">MyClassroom</h1>
-                            <p class="text-xs text-blue-100">Rubrik Penilaian HRVPS Digital</p>
+                        <div class="hidden sm:block">
+                            <h1 class="text-lg sm:text-xl lg:text-3xl font-bold text-white">MyClassroom</h1>
+                            <p class="text-xs text-blue-100 hidden lg:block">Rubrik Penilaian HRVPS Digital</p>
+                        </div>
+                        <!-- Mobile Brand Text -->
+                        <div class="sm:hidden">
+                            <h1 class="text-base font-bold text-white">MyClassroom</h1>
                         </div>
                     </div>
                 </div>
-                <div class="flex space-x-4 animate__animated animate__slideInRight">
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex space-x-3 lg:space-x-4 animate__animated animate__slideInRight">
                     <a href="index.html"
-                        class="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-white hover:text-primary transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        class="bg-white/20 backdrop-blur-sm text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl text-xs lg:text-sm font-medium hover:bg-white hover:text-primary transition-all duration-300 transform hover:scale-105 shadow-lg">
                         📊 Dashboard
                     </a>
                     <a href="database.html"
-                        class="border-2 border-white/30 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-white hover:text-primary transition-all duration-300 transform hover:scale-105 backdrop-blur-sm">
+                        class="border-2 border-white/30 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl text-xs lg:text-sm font-medium hover:bg-white hover:text-primary transition-all duration-300 transform hover:scale-105 backdrop-blur-sm">
+                        🗄️ Database Admin
+                    </a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobileMenuBtn" class="text-white hover:text-gray-200 focus:outline-none focus:text-gray-200 transition-colors duration-200">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="md:hidden hidden pb-4">
+                <div class="flex flex-col space-y-2">
+                    <a href="index.html"
+                        class="bg-white/20 backdrop-blur-sm text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-white hover:text-primary transition-all duration-300 text-center">
+                        📊 Dashboard
+                    </a>
+                    <a href="database.html"
+                        class="border-2 border-white/30 text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-white hover:text-primary transition-all duration-300 text-center">
                         🗄️ Database Admin
                     </a>
                 </div>
             </div>
         </div>
     </nav>
+    
+    <!-- Mobile Menu Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        });
+    </script>
 
     <!-- Hero Section with Sliding Banner -->
     <div class="relative h-80 lg:h-[400px] overflow-hidden">
@@ -173,22 +217,20 @@
 
         <!-- Overlay with Text -->
         <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60 flex items-center justify-center">
-            <div class="text-center text-white px-4 animate__animated animate__fadeInUp animate__delay-1s">
-                <div class="mb-6">
-                    <div class="inline-block p-4 bg-white/10 backdrop-blur-sm rounded-full mb-4 animate__animated animate__bounceIn animate__delay-2s">
-                        <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                </div>
-                <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                    Selamat Datang di MyClassroom
+            <div class="text-center text-white px-4 sm:px-6 lg:px-8 animate__animated animate__fadeInUp animate__delay-1s">
+                <h1 class="text-4xl font-bold mb-2 animate__animated animate__pulse animate__infinite animate__slower">
+                    MyClassroom
                 </h1>
-                <p class="text-xl mb-6 text-blue-100">Sistem Penilaian HRVPS Digital untuk Pembelajaran Bahasa</p>
+                <p class="text-base sm:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-8 animate__animated animate__fadeInUp animate__delay-3s">
+                    Sistem Penilaian HRVPS Digital
+                </p>
+                <div class="animate__animated animate__fadeInUp animate__delay-4s">
+                    <span class="inline-block bg-white/20 backdrop-blur-sm px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-full text-sm sm:text-base lg:text-lg font-medium">
+                        <span class="hidden sm:inline">✨ Kehadiran • Membaca • Kosakata • Pengucapan • Speaking</span>
+                        <span class="sm:hidden">✨ HRVPS Assessment</span>
+                    </span>
+                </div>
                 <div class="flex justify-center space-x-4 animate__animated animate__fadeInUp animate__delay-3s">
-                    <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
-                        ✨ Modern & Intuitif
-                    </div>
                     <div class="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
                         📊 Analisis Real-time
                     </div>
@@ -318,7 +360,7 @@
         </div>
 
         <!-- Form Section -->
-        <div class="bg-white shadow-2xl rounded-3xl p-8 animate__animated animate__fadeInUp border border-gray-100 backdrop-blur-sm">
+        <div class="bg-white shadow-2xl rounded-3xl lg:p-8 p-0 animate__animated animate__fadeInUp border border-gray-100 backdrop-blur-sm">
             <div class="px-6 py-6 border-b border-gray-100">
                 <div class="flex items-center space-x-4">
                     <div class="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
@@ -332,7 +374,7 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-inner p-8 mt-6">
+            <div class="bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-inner p-2 lg:p-8 mt-6">
                 <form id="assessmentForm" class="space-y-6">
                     <!-- Basic Info -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -615,19 +657,19 @@
                     <!-- Progress Notes -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Perkembangan Umum</label>
-                        <textarea id="progressNotes" rows="4"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        <textarea id="progressNotes" rows="3" sm:rows="4"
+                            class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200"
                             placeholder="Masukkan catatan perkembangan siswa..."></textarea>
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="flex gap-4">
+                    <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                         <button type="submit" id="submitBtn"
-                            class="bg-primary text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary">
-                            Simpan Penilaian Baru
+                            class="w-full sm:w-auto bg-primary text-white px-4 sm:px-6 py-3 sm:py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 text-sm sm:text-base font-medium">
+                            💾 Simpan Penilaian Baru
                         </button>
                         <button type="button" id="cancelBtn"
-                            class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                            class="w-full sm:w-auto bg-gray-500 text-white px-4 sm:px-6 py-3 sm:py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-sm sm:text-base font-medium">
                             Batal
                         </button>
                     </div>
@@ -704,18 +746,18 @@
 
                 <!-- Pagination -->
                 <div class="flex items-center justify-between mt-6">
-                    <div class="text-sm text-gray-700">
+                    <div class="text-sm text-gray-700 lg:inline-block hidden">
                         Menampilkan <span id="showingFrom">0</span> sampai <span id="showingTo">0</span> dari <span
                             id="totalItems">0</span> data
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-1">
                         <button id="prevBtn"
-                            class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                            class="p-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
                             Sebelumnya
                         </button>
                         <span id="pageInfo" class="px-3 py-2 text-sm text-gray-700"></span>
                         <button id="nextBtn"
-                            class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                            class="p-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50">
                             Selanjutnya
                         </button>
                     </div>
