@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading state
         refreshIcon.classList.add('hidden');
         refreshSpinner.classList.remove('hidden');
-        refreshText.textContent = '🔄 Refreshing...';
+        refreshText.textContent = 'Refreshing...';
         refreshBtn.disabled = true;
         refreshBtn.classList.add('opacity-75', 'cursor-not-allowed');
         
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 refreshIcon.classList.remove('hidden');
                 refreshSpinner.classList.add('hidden');
-                refreshText.textContent = '🔄 Refresh Data';
+                refreshText.textContent = 'Refresh Data';
                 refreshBtn.disabled = false;
                 refreshBtn.classList.remove('opacity-75', 'cursor-not-allowed');
                 
@@ -145,8 +145,8 @@ function displayTeachers(teachers) {
         <tr class="hover:bg-gray-50 transition-colors duration-200 animate__animated animate__fadeInUp" 
             data-teacher-id="${teacher.id}" 
             style="animation-delay: ${index * 0.1}s">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${teacher.id}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="pl-4 px-1 py-1 whitespace-nowrap text-sm text-gray-900">${teacher.id}</td>
+            <td class="px-1 py-1 whitespace-nowrap">
                 <div class="flex items-center space-x-2">
                     <input type="text" 
                            value="${teacher.name}" 
@@ -158,7 +158,7 @@ function displayTeachers(teachers) {
                     </button>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td class="px-1 py-1 whitespace-nowrap text-sm text-gray-500">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     📊 ${teacher._count?.assessments || 0} penilaian
                 </span>
