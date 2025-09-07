@@ -257,10 +257,20 @@ router.post('/', async (req, res) => {
     }
   } catch (error) {
     console.error('Unexpected error in POST /api/assessments:', error);
+    
+    // Log more details for debugging in production
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      meta: error.meta
+    });
+    
     return res.status(500).json({
       success: false,
       message: 'Terjadi kesalahan server. Silakan coba lagi nanti.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      errorCode: error.code || 'UNKNOWN_ERROR'
     });
   }
 });

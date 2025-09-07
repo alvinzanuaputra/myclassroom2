@@ -18,19 +18,39 @@ const allowedOrigins = [
   'http://127.0.0.1:5500',
   'http://localhost:3001',
   'http://localhost:3000',
-  'file://'
-];
+  'file://',
+  // Add Vercel deployment domains
+  /\.vercel\.app$/,
+  /\.netlify\.app$/,
+  // Add your custom domain if any
+  process.env.FRONTEND_URL
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    // Check string origins
+    const stringOrigins = allowedOrigins.filter(o => typeof o === 'string');
+    if (stringOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    
+    // Check regex origins
+    const regexOrigins = allowedOrigins.filter(o => o instanceof RegExp);
+    if (regexOrigins.some(regex => regex.test(origin))) {
+      return callback(null, true);
+    }
+    
+    // In production, be more permissive for Vercel domains
+    if (process.env.NODE_ENV === 'production' && origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+    console.warn(msg);
+    return callback(new Error(msg), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
