@@ -1,217 +1,262 @@
-const express = require('express');
-const prisma = require('../prismaClient');
+const express = require('express')
+const prisma = require('../prismaClient')
 
-const router = express.Router();
+const router = express.Router()
 
 // Fungsi untuk menghitung kategori berdasarkan rata-rata
-function calculateCategory(average) {
-  if (average >= 21) return 'Sangat Baik';
-  if (average >= 16) return 'Baik';
-  if (average >= 11) return 'Cukup';
-  if (average >= 6) return 'Kurang';
-  return 'Sangat Kurang';
+function calculateCategory (average) {
+  if (average >= 21) return 'Sangat Baik'
+  if (average >= 16) return 'Baik'
+  if (average >= 11) return 'Cukup'
+  if (average >= 6) return 'Kurang'
+  return 'Sangat Kurang'
 }
 
 // Fungsi untuk validasi skor
-function validateScores(scores) {
-  const aspects = ['kehadiran', 'membaca', 'kosakata', 'pengucapan', 'speaking'];
+function validateScores (scores) {
+  const aspects = ['kehadiran', 'membaca', 'kosakata', 'pengucapan', 'speaking']
   for (const aspect of aspects) {
-    const score = scores[aspect];
-    if (typeof score !== 'number' || score < 0 || score > 5 || !Number.isInteger(score)) {
-      return false;
+    const score = scores[aspect]
+    if (
+      typeof score !== 'number' ||
+      score < 0 ||
+      score > 5 ||
+      !Number.isInteger(score)
+    ) {
+      return false
     }
   }
-  return true;
+  return true
 }
 
 // Fungsi untuk menghitung total per pertemuan
-function calculateMeetingTotal(scores) {
-  return scores.kehadiran + scores.membaca + scores.kosakata + scores.pengucapan + scores.speaking;
+function calculateMeetingTotal (scores) {
+  return (
+    scores.kehadiran +
+    scores.membaca +
+    scores.kosakata +
+    scores.pengucapan +
+    scores.speaking
+  )
 }
 
-// GET /api/assessments - Mendapatkan daftar penilaian dengan pagination dan search
+// GET /api/assessments - Mendapatkan daftar penilaian dengan search
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, q = '' } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const { q = '' } = req.query
 
-    const where = q ? {
-      studentName: {
-        contains: q,
-        mode: 'insensitive'
+    const where = q
+      ? {
+          studentName: {
+            contains: q,
+            mode: 'insensitive'
+          }
+        }
+      : {}
+
+    const assessments = await prisma.studentAssessment.findMany({
+      where,
+      include: {
+        teacher: true
       }
-    } : {};
-
-    const [assessments, total] = await Promise.all([
-      prisma.studentAssessment.findMany({
-        where,
-        include: {
-          teacher: true
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: parseInt(limit)
-      }),
-      prisma.studentAssessment.count({ where })
-    ]);
+    })
 
     // Map assessments to include teacherName for easier frontend access
     const mappedAssessments = assessments.map(assessment => ({
       ...assessment,
       teacherName: assessment.teacher?.name || 'Unknown'
-    }));
+    }))
 
-    const totalPages = Math.ceil(total / parseInt(limit));
+    // Custom sorting: by class order (3A-3B-4A-4B-5A-5B), then by week, then by student name
+    const classOrder = { '3A': 1, '3B': 2, '4A': 3, '4B': 4, '5A': 5, '5B': 6 }
+    mappedAssessments.sort((a, b) => {
+      // First sort by class order
+      const classOrderA = classOrder[a.className] || 999
+      const classOrderB = classOrder[b.className] || 999
+      if (classOrderA !== classOrderB) {
+        return classOrderA - classOrderB
+      }
+
+      // Then sort by week number
+      if (a.weekNumber !== b.weekNumber) {
+        return a.weekNumber - b.weekNumber
+      }
+
+      // Finally sort by student name
+      return a.studentName.localeCompare(b.studentName)
+    })
 
     res.json({
       success: true,
       data: mappedAssessments,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalItems: total,
-        itemsPerPage: parseInt(limit),
-        hasNext: parseInt(page) < totalPages,
-        hasPrev: parseInt(page) > 1
-      },
       message: 'Data penilaian berhasil diambil'
-    });
+    })
   } catch (error) {
-    console.error('Error mengambil data penilaian:', error);
+    console.error('Error mengambil data penilaian:', error)
     res.status(500).json({
       success: false,
       message: 'Gagal mengambil data penilaian'
-    });
+    })
   }
-});
+})
 
 // GET /api/assessments/:id - Mendapatkan detail penilaian
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
     const assessment = await prisma.studentAssessment.findUnique({
       where: { id: parseInt(id) },
       include: {
         teacher: true
       }
-    });
+    })
 
     if (!assessment) {
       return res.status(404).json({
         success: false,
         message: 'Data penilaian tidak ditemukan'
-      });
+      })
     }
 
     res.json({
       success: true,
       data: assessment,
       message: 'Detail penilaian berhasil diambil'
-    });
+    })
   } catch (error) {
-    console.error('Error mengambil detail penilaian:', error);
+    console.error('Error mengambil detail penilaian:', error)
     res.status(500).json({
       success: false,
       message: 'Gagal mengambil detail penilaian'
-    });
+    })
   }
-});
+})
 
 // POST /api/assessments - Membuat penilaian baru
 router.post('/', async (req, res) => {
   try {
-    console.log('Received assessment data:', JSON.stringify(req.body, null, 2));
-    const { studentName, className, weekNumber, teacherId, pertemuan, progress_notes } = req.body;
+    console.log('Received assessment data:', JSON.stringify(req.body, null, 2))
+    const {
+      studentName,
+      className,
+      weekNumber,
+      teacherId,
+      pertemuan,
+      progress_notes
+    } = req.body
 
     // Validasi input dasar
-    if (!studentName || !className || !weekNumber || !teacherId || !pertemuan || !Array.isArray(pertemuan)) {
-      console.error('Validation failed - Missing required fields:', { studentName, className, weekNumber, teacherId, pertemuan });
+    if (
+      !studentName ||
+      !className ||
+      !weekNumber ||
+      !teacherId ||
+      !pertemuan ||
+      !Array.isArray(pertemuan)
+    ) {
+      console.error('Validation failed - Missing required fields:', {
+        studentName,
+        className,
+        weekNumber,
+        teacherId,
+        pertemuan
+      })
       return res.status(400).json({
         success: false,
         message: 'Data tidak lengkap. Pastikan semua field terisi dengan benar.'
-      });
+      })
     }
 
     // Validasi dan hitung skor per pertemuan
-    const meetingTotals = [];
-    const meetingScores = {};
-    
+    const meetingTotals = []
+    const meetingScores = {}
+
     // Validate we have 3 meetings
     if (pertemuan.length !== 3) {
-      console.error(`Validation failed - Expected 3 meetings, got ${pertemuan.length}`);
+      console.error(
+        `Validation failed - Expected 3 meetings, got ${pertemuan.length}`
+      )
       return res.status(400).json({
         success: false,
         message: 'Data pertemuan harus berisi 3 pertemuan'
-      });
+      })
     }
-    
+
     for (let i = 0; i < 3; i++) {
-      const meeting = pertemuan[i];
+      const meeting = pertemuan[i]
       if (!meeting || meeting.meeting !== i + 1) {
-        console.error(`Validation failed - Invalid meeting data at index ${i}:`, meeting);
+        console.error(
+          `Validation failed - Invalid meeting data at index ${i}:`,
+          meeting
+        )
         return res.status(400).json({
           success: false,
           message: `Data pertemuan ${i + 1} tidak valid`
-        });
+        })
       }
 
       if (!validateScores(meeting.scores)) {
-        console.error(`Validation failed - Invalid scores for meeting ${i + 1}:`, meeting.scores);
+        console.error(
+          `Validation failed - Invalid scores for meeting ${i + 1}:`,
+          meeting.scores
+        )
         return res.status(400).json({
           success: false,
-          message: `Skor pada pertemuan ${i + 1} tidak valid. Semua skor harus berupa angka bulat 0-5.`
-        });
+          message: `Skor pada pertemuan ${
+            i + 1
+          } tidak valid. Semua skor harus berupa angka bulat 0-5.`
+        })
       }
 
-      const total = calculateMeetingTotal(meeting.scores);
-      meetingTotals.push(total);
-      
+      const total = calculateMeetingTotal(meeting.scores)
+      meetingTotals.push(total)
+
       // Store individual scores
-      meetingScores[`meeting${i + 1}_kehadiran`] = meeting.scores.kehadiran;
-      meetingScores[`meeting${i + 1}_membaca`] = meeting.scores.membaca;
-      meetingScores[`meeting${i + 1}_kosakata`] = meeting.scores.kosakata;
-      meetingScores[`meeting${i + 1}_pengucapan`] = meeting.scores.pengucapan;
-      meetingScores[`meeting${i + 1}_speaking`] = meeting.scores.speaking;
-      meetingScores[`meeting${i + 1}_total`] = total;
+      meetingScores[`meeting${i + 1}_kehadiran`] = meeting.scores.kehadiran
+      meetingScores[`meeting${i + 1}_membaca`] = meeting.scores.membaca
+      meetingScores[`meeting${i + 1}_kosakata`] = meeting.scores.kosakata
+      meetingScores[`meeting${i + 1}_pengucapan`] = meeting.scores.pengucapan
+      meetingScores[`meeting${i + 1}_speaking`] = meeting.scores.speaking
+      meetingScores[`meeting${i + 1}_total`] = total
     }
 
     // Hitung total mingguan dan rata-rata berdasarkan tipe kelas
-    const isClass5 = className === '5A' || className === '5B';
-    const activeMeetings = isClass5 ? 2 : 3;
-    const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0);
-    const average = Number((totalWeekly / activeMeetings).toFixed(2));
-    const category = calculateCategory(average);
+    const isClass5 = className === '5A' || className === '5B'
+    const activeMeetings = isClass5 ? 2 : 3
+    const totalWeekly = meetingTotals.reduce((sum, total) => sum + total, 0)
+    const average = Number((totalWeekly / activeMeetings).toFixed(2))
+    const category = calculateCategory(average)
 
     // Validasi weekNumber
     if (!Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 16) {
-      console.error('Validation failed - Invalid week number:', weekNumber);
+      console.error('Validation failed - Invalid week number:', weekNumber)
       return res.status(400).json({
         success: false,
         message: 'Minggu harus berupa angka antara 1-16'
-      });
+      })
     }
 
     // Validasi guru exists
     const teacher = await prisma.teacher.findUnique({
       where: { id: parseInt(teacherId) }
-    });
+    })
 
     if (!teacher) {
-      console.error('Validation failed - Teacher not found:', teacherId);
+      console.error('Validation failed - Teacher not found:', teacherId)
       return res.status(404).json({
         success: false,
         message: 'Guru tidak ditemukan'
-      });
+      })
     }
 
     // Validasi kelas
-    const validClasses = ['3A', '3B', '4A', '4B', '5A', '5B'];
+    const validClasses = ['3A', '3B', '4A', '4B', '5A', '5B']
     if (!validClasses.includes(className)) {
-      console.error('Validation failed - Invalid class:', className);
+      console.error('Validation failed - Invalid class:', className)
       return res.status(400).json({
         success: false,
         message: 'Kelas tidak valid'
-      });
+      })
     }
 
     // Simpan ke database
@@ -226,16 +271,16 @@ router.post('/', async (req, res) => {
         average,
         category,
         progress_notes: progress_notes || null
-      };
+      }
 
       const assessment = await prisma.studentAssessment.create({
         data: assessmentData,
         include: {
           teacher: true
         }
-      });
+      })
 
-      console.log('Assessment created successfully:', assessment.id);
+      console.log('Assessment created successfully:', assessment.id)
       return res.status(201).json({
         success: true,
         data: {
@@ -243,93 +288,106 @@ router.post('/', async (req, res) => {
           teacherName: assessment.teacher?.name || 'Unknown'
         },
         message: 'Penilaian berhasil disimpan'
-      });
+      })
     } catch (dbError) {
-      console.error('Database error:', dbError);
+      console.error('Database error:', dbError)
       // Return more specific error message for unique constraint violation
       if (dbError.code === 'P2002') {
         return res.status(400).json({
           success: false,
-          message: 'Data penilaian untuk siswa ini sudah ada di minggu yang sama'
-        });
+          message:
+            'Data penilaian untuk siswa ini sudah ada di minggu yang sama'
+        })
       }
-      throw dbError;
+      throw dbError
     }
   } catch (error) {
-    console.error('Unexpected error in POST /api/assessments:', error);
-    
+    console.error('Unexpected error in POST /api/assessments:', error)
+
     // Log more details for debugging in production
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
       code: error.code,
       meta: error.meta
-    });
-    
+    })
+
     return res.status(500).json({
       success: false,
       message: 'Terjadi kesalahan server. Silakan coba lagi nanti.',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       errorCode: error.code || 'UNKNOWN_ERROR'
-    });
+    })
   }
-});
+})
 
 // PUT /api/assessments/:id/timestamps - Update assessment timestamps
 router.put('/:id/timestamps', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { createdAt, updatedAt } = req.body;
-    
-    const updateData = {};
-    if (createdAt) updateData.createdAt = new Date(createdAt);
-    if (updatedAt) updateData.updatedAt = new Date(updatedAt);
-    
+    const { id } = req.params
+    const { createdAt, updatedAt } = req.body
+
+    const updateData = {}
+    if (createdAt) updateData.createdAt = new Date(createdAt)
+    if (updatedAt) updateData.updatedAt = new Date(updatedAt)
+
     const updatedAssessment = await prisma.studentAssessment.update({
       where: { id: parseInt(id) },
       data: updateData
-    });
-    
+    })
+
     res.json({
       success: true,
       message: 'Timestamps updated successfully',
       data: updatedAssessment
-    });
+    })
   } catch (error) {
-    console.error('Error updating timestamps:', error);
+    console.error('Error updating timestamps:', error)
     res.status(500).json({
       success: false,
       message: 'Failed to update timestamps',
       error: error.message
-    });
+    })
   }
-});
+})
 
 // PUT /api/assessments/:id - Update penilaian
 router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
     const {
       studentName,
       className,
       weekNumber,
       teacherId,
-      meeting1_kehadiran, meeting1_membaca, meeting1_kosakata, meeting1_pengucapan, meeting1_speaking,
-      meeting2_kehadiran, meeting2_membaca, meeting2_kosakata, meeting2_pengucapan, meeting2_speaking,
-      meeting3_kehadiran, meeting3_membaca, meeting3_kosakata, meeting3_pengucapan, meeting3_speaking,
+      meeting1_kehadiran,
+      meeting1_membaca,
+      meeting1_kosakata,
+      meeting1_pengucapan,
+      meeting1_speaking,
+      meeting2_kehadiran,
+      meeting2_membaca,
+      meeting2_kosakata,
+      meeting2_pengucapan,
+      meeting2_speaking,
+      meeting3_kehadiran,
+      meeting3_membaca,
+      meeting3_kosakata,
+      meeting3_pengucapan,
+      meeting3_speaking,
       progress_notes
-    } = req.body;
+    } = req.body
 
     // Cek apakah assessment exists
     const existingAssessment = await prisma.studentAssessment.findUnique({
       where: { id: parseInt(id) }
-    });
+    })
 
     if (!existingAssessment) {
       return res.status(404).json({
         success: false,
         message: 'Data penilaian tidak ditemukan'
-      });
+      })
     }
 
     // Validasi input dasar
@@ -337,7 +395,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Data tidak lengkap. Pastikan semua field terisi dengan benar.'
-      });
+      })
     }
 
     // Validasi weekNumber
@@ -345,41 +403,56 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Minggu harus berupa angka antara 1-16'
-      });
+      })
     }
 
     // Validasi guru exists
     const teacher = await prisma.teacher.findUnique({
       where: { id: parseInt(teacherId) }
-    });
+    })
 
     if (!teacher) {
       return res.status(404).json({
         success: false,
         message: 'Guru tidak ditemukan'
-      });
+      })
     }
 
     // Validasi kelas
-    const validClasses = ['3A', '3B', '4A', '4B', '5A', '5B'];
+    const validClasses = ['3A', '3B', '4A', '4B', '5A', '5B']
     if (!validClasses.includes(className)) {
       return res.status(400).json({
         success: false,
         message: 'Kelas tidak valid'
-      });
+      })
     }
 
     // Calculate meeting totals from individual scores
-    const meeting1_total = meeting1_kehadiran + meeting1_membaca + meeting1_kosakata + meeting1_pengucapan + meeting1_speaking;
-    const meeting2_total = meeting2_kehadiran + meeting2_membaca + meeting2_kosakata + meeting2_pengucapan + meeting2_speaking;
-    const meeting3_total = meeting3_kehadiran + meeting3_membaca + meeting3_kosakata + meeting3_pengucapan + meeting3_speaking;
+    const meeting1_total =
+      meeting1_kehadiran +
+      meeting1_membaca +
+      meeting1_kosakata +
+      meeting1_pengucapan +
+      meeting1_speaking
+    const meeting2_total =
+      meeting2_kehadiran +
+      meeting2_membaca +
+      meeting2_kosakata +
+      meeting2_pengucapan +
+      meeting2_speaking
+    const meeting3_total =
+      meeting3_kehadiran +
+      meeting3_membaca +
+      meeting3_kosakata +
+      meeting3_pengucapan +
+      meeting3_speaking
 
     // Hitung total mingguan dan rata-rata berdasarkan tipe kelas
-    const isClass5 = className === '5A' || className === '5B';
-    const activeMeetings = isClass5 ? 2 : 3;
-    const totalWeekly = meeting1_total + meeting2_total + meeting3_total;
-    const average = Number((totalWeekly / activeMeetings).toFixed(2));
-    const category = calculateCategory(average);
+    const isClass5 = className === '5A' || className === '5B'
+    const activeMeetings = isClass5 ? 2 : 3
+    const totalWeekly = meeting1_total + meeting2_total + meeting3_total
+    const average = Number((totalWeekly / activeMeetings).toFixed(2))
+    const category = calculateCategory(average)
 
     // Update database
     const assessment = await prisma.studentAssessment.update({
@@ -415,55 +488,55 @@ router.put('/:id', async (req, res) => {
       include: {
         teacher: true
       }
-    });
+    })
 
     res.json({
       success: true,
       data: assessment,
       message: 'Penilaian berhasil diperbarui'
-    });
+    })
   } catch (error) {
-    console.error('Error mengupdate penilaian:', error);
+    console.error('Error mengupdate penilaian:', error)
     res.status(500).json({
       success: false,
       message: 'Gagal memperbarui penilaian'
-    });
+    })
   }
-});
+})
 
 // DELETE /api/assessments/:id - Hapus penilaian
 router.delete('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params
 
     // Cek apakah assessment exists
     const existingAssessment = await prisma.studentAssessment.findUnique({
       where: { id: parseInt(id) }
-    });
+    })
 
     if (!existingAssessment) {
       return res.status(404).json({
         success: false,
         message: 'Data penilaian tidak ditemukan'
-      });
+      })
     }
 
     // Hapus assessment
     await prisma.studentAssessment.delete({
       where: { id: parseInt(id) }
-    });
+    })
 
     res.json({
       success: true,
       message: 'Penilaian berhasil dihapus'
-    });
+    })
   } catch (error) {
-    console.error('Error menghapus penilaian:', error);
+    console.error('Error menghapus penilaian:', error)
     res.status(500).json({
       success: false,
       message: 'Gagal menghapus penilaian'
-    });
+    })
   }
-});
+})
 
-module.exports = router;
+module.exports = router
